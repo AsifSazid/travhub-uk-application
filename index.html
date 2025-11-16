@@ -424,7 +424,7 @@
                 completed: false,
                 passportInfo: {},
                 nidInfo: {
-                    has_nid: null // Fixed: Initialize as null instead of empty object
+                    has_nid: null
                 },
                 contactInfo: {
                     emails: [''],
@@ -444,7 +444,7 @@
                 familyInfo: {
                     relationshipStatus: '',
                     familyMembers: [],
-                    hasRelativeInUK: null, // Fixed: Initialize as null
+                    hasRelativeInUK: null,
                     relativeAddress: {
                         line1: '',
                         line2: '',
@@ -454,7 +454,7 @@
                     }
                 },
                 accommodationDetails: {
-                    hasAddress: null, // Fixed: Initialize as null
+                    hasAddress: null,
                     hotels: [''],
                     addresses: [{
                         line1: '',
@@ -473,7 +473,7 @@
                     jobDescription: ''
                 },
                 incomeExpenditure: {
-                    haveSavings: null, // Fixed: Initialize as null
+                    haveSavings: null,
                     planningToExpense: '',
                     totalExpenseInBd: '',
                     paymentInfo: [{
@@ -510,7 +510,7 @@
                 
                 tab.innerHTML = `
                     <div class="flex justify-between w-full items-center mb-1">
-                        <span>Applicant ${i + 1}</span>
+                        <span>Applicant ${i + 1} &nbsp;</span> 
                         ${applicant.completed ? '<i class="fas fa-check-circle text-green-500"></i>' : ''}
                     </div>
                     <div class="w-full bg-gray-200 rounded-full h-1.5 applicant-progress">
@@ -572,7 +572,6 @@
                            applicant.passportInfo.pp_family_name &&
                            applicant.passportInfo.pp_number;
                 case 1: // NID Information
-                    // Fixed: Only consider complete if has_nid is explicitly set
                     return applicant.nidInfo.has_nid !== null;
                 case 2: // Contact Information
                     return applicant.contactInfo.emails[0] && 
@@ -581,7 +580,6 @@
                 case 3: // Family Information
                     return applicant.familyInfo.relationshipStatus;
                 case 4: // Accommodation Details
-                    // Fixed: Only consider complete if hasAddress is explicitly set
                     return applicant.accommodationDetails.hasAddress !== null;
                 case 5: // Employment Information
                     return applicant.employmentInfo.employmentStatus;
@@ -591,7 +589,6 @@
                     return applicant.travelInfo.visitMainReason &&
                            applicant.travelInfo.arrivalDate;
                 case 8: // Travel History
-                    // Fixed: This is optional, so always return true
                     return true;
                 default:
                     return false;
@@ -656,7 +653,12 @@
 
         // Check if an applicant has completed all steps
         function isApplicantComplete(applicantIndex) {
-            return countCompletedSteps(applicantIndex) === state.totalSteps;
+            for (let i = 0; i < state.totalSteps; i++) {
+                if (!isStepCompletedForApplicant(applicantIndex, i)) {
+                    return false;
+                }
+            }
+            return true;
         }
 
         // Switch between applicants
@@ -978,7 +980,7 @@
                 `;
             });
             
-            // Fixed: Generate options for preferred phone without showing (Phone 2)
+            // Generate options for preferred phone
             let phoneOptionsHTML = '';
             applicant.contactInfo.phones.forEach((phone, index) => {
                 if (phone) {
@@ -1750,13 +1752,15 @@
                 state.applicants[state.currentApplicant].completed = true;
                 
                 // Check if all applicants are complete
-                if (state.currentApplicant < state.totalApplicants - 1) {
+                const allApplicantsComplete = state.applicants.every(applicant => applicant.completed);
+                
+                if (allApplicantsComplete) {
+                    // All applicants completed, show summary
+                    showSummary();
+                } else if (state.currentApplicant < state.totalApplicants - 1) {
                     // Show next applicant button
                     document.getElementById('next-applicant-btn').classList.remove('hidden');
                     document.getElementById('next-btn').classList.add('hidden');
-                } else {
-                    // All applicants completed, show summary
-                    showSummary();
                 }
                 
                 // Update progress
@@ -1779,6 +1783,9 @@
                 
                 // Switch to the next applicant
                 switchApplicant(state.currentApplicant);
+            } else {
+                // This is the last applicant, show summary
+                showSummary();
             }
         }
 
@@ -1833,13 +1840,22 @@
                 document.getElementById('prev-btn').classList.remove('hidden');
             }
             
-            // Fixed: Show submit button only on summary step
-            if (state.currentStep === state.totalSteps - 1 && state.currentApplicant === state.totalApplicants - 1) {
-                document.getElementById('submit-btn').classList.remove('hidden');
+            // Check if we're on the summary step (special case)
+            const isSummaryStep = document.getElementById('form-steps').innerHTML.includes('Application Summary');
+            
+            if (isSummaryStep) {
+                document.getElementById('submit-btn').classList.add('hidden');
                 document.getElementById('next-btn').classList.add('hidden');
-            } else {
+                document.getElementById('next-applicant-btn').classList.add('hidden');
+            } else if (state.currentStep === state.totalSteps - 1) {
+                // Always show "Next" on the last form step to go to Summary
                 document.getElementById('submit-btn').classList.add('hidden');
                 document.getElementById('next-btn').classList.remove('hidden');
+                document.getElementById('next-applicant-btn').classList.add('hidden');
+            }else {
+                document.getElementById('submit-btn').classList.add('hidden');
+                document.getElementById('next-btn').classList.remove('hidden');
+                document.getElementById('next-applicant-btn').classList.add('hidden');
             }
             
             // Update progress indicators
