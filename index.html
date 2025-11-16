@@ -84,6 +84,38 @@
             background-color: #3b82f6;
             color: white;
         }
+        
+        .dynamic-field-group {
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background-color: #f9fafb;
+        }
+        
+        .address-group {
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background-color: #f9fafb;
+        }
+        
+        .family-member-group {
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background-color: #f9fafb;
+        }
+        
+        .travel-history-group {
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background-color: #f9fafb;
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -110,7 +142,7 @@
                         <select id="applicant-count" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                             <option value="1">1 Applicant</option>
                             <option value="2">2 Applicants</option>
-                            <option value="3">3 Applicants</ants>
+                            <option value="3">3 Applicants</option>
                             <option value="4">4 Applicants</option>
                             <option value="5">5 Applicants</option>
                         </select>
@@ -163,10 +195,10 @@
                 <div class="px-8 pt-4">
                     <div class="flex justify-between mb-2">
                         <span class="text-sm font-medium text-gray-700">Applicant <span id="current-applicant-number">1</span> Progress</span>
-                        <span class="text-sm font-medium text-gray-500"><span id="current-step">1</span> of <span id="total-steps">7</span></span>
+                        <span class="text-sm font-medium text-gray-500"><span id="current-step">1</span> of <span id="total-steps">9</span></span>
                     </div>
                     <div class="w-full bg-gray-200 rounded-full h-2.5">
-                        <div id="individual-progress-bar" class="bg-green-600 h-2.5 rounded-full progress-bar" style="width: 14.28%"></div>
+                        <div id="individual-progress-bar" class="bg-green-600 h-2.5 rounded-full progress-bar" style="width: 11.11%"></div>
                     </div>
                 </div>
 
@@ -223,7 +255,7 @@
         const state = {
             currentApplicant: 0,
             currentStep: 0,
-            totalSteps: 7,
+            totalSteps: 9,
             totalApplicants: 1,
             pnr: '',
             applicants: [],
@@ -234,6 +266,11 @@
                     description: 'Provide your passport details'
                 },
                 { 
+                    name: 'NID Information', 
+                    icon: 'fa-id-card',
+                    description: 'National Identity Card details'
+                },
+                { 
                     name: 'Contact Information', 
                     icon: 'fa-address-book',
                     description: 'Your contact details'
@@ -242,6 +279,11 @@
                     name: 'Family Information', 
                     icon: 'fa-users',
                     description: 'Information about your family'
+                },
+                { 
+                    name: 'Accommodation Details', 
+                    icon: 'fa-hotel',
+                    description: 'Where you will stay in the UK'
                 },
                 { 
                     name: 'Employment Information', 
@@ -381,12 +423,74 @@
                 id: generateApplicantId(index),
                 completed: false,
                 passportInfo: {},
-                contactInfo: {},
-                familyInfo: {},
-                employmentInfo: {},
-                incomeExpenditure: {},
-                travelInfo: {},
-                travelHistory: {}
+                nidInfo: {
+                    has_nid: null // Fixed: Initialize as null instead of empty object
+                },
+                contactInfo: {
+                    emails: [''],
+                    phones: [''],
+                    addresses: [{
+                        line1: '',
+                        line2: '',
+                        city: '',
+                        state: '',
+                        postalCode: '',
+                        isCorrespondence: false,
+                        livedInFor: '',
+                        ownershipStatus: ''
+                    }],
+                    preferred_phone_no: ''
+                },
+                familyInfo: {
+                    relationshipStatus: '',
+                    familyMembers: [],
+                    hasRelativeInUK: null, // Fixed: Initialize as null
+                    relativeAddress: {
+                        line1: '',
+                        line2: '',
+                        city: '',
+                        state: '',
+                        postalCode: ''
+                    }
+                },
+                accommodationDetails: {
+                    hasAddress: null, // Fixed: Initialize as null
+                    hotels: [''],
+                    addresses: [{
+                        line1: '',
+                        line2: '',
+                        city: '',
+                        state: '',
+                        postalCode: ''
+                    }]
+                },
+                employmentInfo: {
+                    employmentStatus: '',
+                    jobDetails: '',
+                    yearlyEarning: '',
+                    jobTitle: '',
+                    monthlyIncome: '',
+                    jobDescription: ''
+                },
+                incomeExpenditure: {
+                    haveSavings: null, // Fixed: Initialize as null
+                    planningToExpense: '',
+                    totalExpenseInBd: '',
+                    paymentInfo: [{
+                        currency: '',
+                        amount: '',
+                        paidFor: ''
+                    }]
+                },
+                travelInfo: {
+                    visitMainReason: '',
+                    businessReasonToVisitUk: '',
+                    tourismReasonToVisitUk: '',
+                    activities: '',
+                    arrivalDate: '',
+                    leaveDate: ''
+                },
+                travelHistory: []
             };
         }
 
@@ -464,23 +568,31 @@
             
             switch(stepIndex) {
                 case 0: // Passport Information
-                    return Object.keys(applicant.passportInfo).length > 0 && 
-                           applicant.passportInfo.passportNumber && 
-                           applicant.passportInfo.countryOfIssue;
-                case 1: // Contact Information
-                    return Object.keys(applicant.contactInfo).length > 0 && 
-                           applicant.contactInfo.email && 
-                           applicant.contactInfo.phone;
-                case 2: // Family Information
-                    return Object.keys(applicant.familyInfo).length > 0;
-                case 3: // Employment Information
-                    return Object.keys(applicant.employmentInfo).length > 0;
-                case 4: // Income & Expenditure
-                    return Object.keys(applicant.incomeExpenditure).length > 0;
-                case 5: // Travel Information
-                    return Object.keys(applicant.travelInfo).length > 0;
-                case 6: // Travel History
-                    return Object.keys(applicant.travelHistory).length > 0;
+                    return applicant.passportInfo.pp_given_name && 
+                           applicant.passportInfo.pp_family_name &&
+                           applicant.passportInfo.pp_number;
+                case 1: // NID Information
+                    // Fixed: Only consider complete if has_nid is explicitly set
+                    return applicant.nidInfo.has_nid !== null;
+                case 2: // Contact Information
+                    return applicant.contactInfo.emails[0] && 
+                           applicant.contactInfo.phones[0] &&
+                           applicant.contactInfo.addresses[0].line1;
+                case 3: // Family Information
+                    return applicant.familyInfo.relationshipStatus;
+                case 4: // Accommodation Details
+                    // Fixed: Only consider complete if hasAddress is explicitly set
+                    return applicant.accommodationDetails.hasAddress !== null;
+                case 5: // Employment Information
+                    return applicant.employmentInfo.employmentStatus;
+                case 6: // Income & Expenditure
+                    return applicant.incomeExpenditure.planningToExpense;
+                case 7: // Travel Information
+                    return applicant.travelInfo.visitMainReason &&
+                           applicant.travelInfo.arrivalDate;
+                case 8: // Travel History
+                    // Fixed: This is optional, so always return true
+                    return true;
                 default:
                     return false;
             }
@@ -515,23 +627,28 @@
             
             switch(stepIndex) {
                 case 0: // Passport Information
-                    return Object.keys(applicant.passportInfo).length > 0 && 
-                           applicant.passportInfo.passportNumber && 
-                           applicant.passportInfo.countryOfIssue;
-                case 1: // Contact Information
-                    return Object.keys(applicant.contactInfo).length > 0 && 
-                           applicant.contactInfo.email && 
-                           applicant.contactInfo.phone;
-                case 2: // Family Information
-                    return Object.keys(applicant.familyInfo).length > 0;
-                case 3: // Employment Information
-                    return Object.keys(applicant.employmentInfo).length > 0;
-                case 4: // Income & Expenditure
-                    return Object.keys(applicant.incomeExpenditure).length > 0;
-                case 5: // Travel Information
-                    return Object.keys(applicant.travelInfo).length > 0;
-                case 6: // Travel History
-                    return Object.keys(applicant.travelHistory).length > 0;
+                    return applicant.passportInfo.pp_given_name && 
+                           applicant.passportInfo.pp_family_name &&
+                           applicant.passportInfo.pp_number;
+                case 1: // NID Information
+                    return applicant.nidInfo.has_nid !== null;
+                case 2: // Contact Information
+                    return applicant.contactInfo.emails[0] && 
+                           applicant.contactInfo.phones[0] &&
+                           applicant.contactInfo.addresses[0].line1;
+                case 3: // Family Information
+                    return applicant.familyInfo.relationshipStatus;
+                case 4: // Accommodation Details
+                    return applicant.accommodationDetails.hasAddress !== null;
+                case 5: // Employment Information
+                    return applicant.employmentInfo.employmentStatus;
+                case 6: // Income & Expenditure
+                    return applicant.incomeExpenditure.planningToExpense;
+                case 7: // Travel Information
+                    return applicant.travelInfo.visitMainReason &&
+                           applicant.travelInfo.arrivalDate;
+                case 8: // Travel History
+                    return true;
                 default:
                     return false;
             }
@@ -601,79 +718,1004 @@
             
             switch(stepIndex) {
                 case 0: // Passport Information
-                    return `
+                    return generatePassportInfoStep(applicant);
+                    
+                case 1: // NID Information
+                    return generateNIDInfoStep(applicant);
+                    
+                case 2: // Contact Information
+                    return generateContactInfoStep(applicant);
+                    
+                case 3: // Family Information
+                    return generateFamilyInfoStep(applicant);
+                    
+                case 4: // Accommodation Details
+                    return generateAccommodationDetailsStep(applicant);
+                    
+                case 5: // Employment Information
+                    return generateEmploymentInfoStep(applicant);
+                    
+                case 6: // Income & Expenditure
+                    return generateIncomeExpenditureStep(applicant);
+                    
+                case 7: // Travel Information
+                    return generateTravelInfoStep(applicant);
+                    
+                case 8: // Travel History
+                    return generateTravelHistoryStep(applicant);
+                    
+                default:
+                    return '<p>Step content not defined.</p>';
+            }
+        }
+
+        // Generate Passport Information step
+        function generatePassportInfoStep(applicant) {
+            return `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-gray-700 mb-2">Given Name *</label>
+                        <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                               value="${applicant.passportInfo.pp_given_name || ''}" 
+                               onchange="updateApplicantData('passportInfo', 'pp_given_name', this.value)" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 mb-2">Family Name *</label>
+                        <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                               value="${applicant.passportInfo.pp_family_name || ''}" 
+                               onchange="updateApplicantData('passportInfo', 'pp_family_name', this.value)" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 mb-2">Gender *</label>
+                        <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                onchange="updateApplicantData('passportInfo', 'pp_gender', this.value)" required>
+                            <option value="">Select</option>
+                            <option value="male" ${applicant.passportInfo.pp_gender === 'male' ? 'selected' : ''}>Male</option>
+                            <option value="female" ${applicant.passportInfo.pp_gender === 'female' ? 'selected' : ''}>Female</option>
+                            <option value="other" ${applicant.passportInfo.pp_gender === 'other' ? 'selected' : ''}>Other</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 mb-2">Place of Birth *</label>
+                        <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                               value="${applicant.passportInfo.pp_pob || ''}" 
+                               onchange="updateApplicantData('passportInfo', 'pp_pob', this.value)" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 mb-2">Date of Birth *</label>
+                        <input type="date" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                               value="${applicant.passportInfo.pp_dob || ''}" 
+                               onchange="updateApplicantData('passportInfo', 'pp_dob', this.value)" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 mb-2">Passport Number *</label>
+                        <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                               value="${applicant.passportInfo.pp_number || ''}" 
+                               onchange="updateApplicantData('passportInfo', 'pp_number', this.value)" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 mb-2">Issuing Authority *</label>
+                        <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                               value="${applicant.passportInfo.pp_issuing_authority || ''}" 
+                               onchange="updateApplicantData('passportInfo', 'pp_issuing_authority', this.value)" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 mb-2">Issue Date *</label>
+                        <input type="date" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                               value="${applicant.passportInfo.pp_issue_date || ''}" 
+                               onchange="updateApplicantData('passportInfo', 'pp_issue_date', this.value)" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 mb-2">Expiry Date *</label>
+                        <input type="date" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                               value="${applicant.passportInfo.pp_expiry_date || ''}" 
+                               onchange="updateApplicantData('passportInfo', 'pp_expiry_date', this.value)" required>
+                    </div>
+                </div>
+                <p class="text-sm text-gray-500 mt-4">* Required fields</p>
+            `;
+        }
+
+        // Generate NID Information step
+        function generateNIDInfoStep(applicant) {
+            return `
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-gray-700 mb-2">Do you have a valid national identity card? *</label>
+                        <div class="flex space-x-4">
+                            <label class="inline-flex items-center">
+                                <input type="radio" name="has_nid" value="yes" class="h-4 w-4 text-blue-600" 
+                                       ${applicant.nidInfo.has_nid === true ? 'checked' : ''}
+                                       onchange="updateApplicantData('nidInfo', 'has_nid', this.value === 'yes')" required>
+                                <span class="ml-2">Yes</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="radio" name="has_nid" value="no" class="h-4 w-4 text-blue-600"
+                                       ${applicant.nidInfo.has_nid === false ? 'checked' : ''}
+                                       onchange="updateApplicantData('nidInfo', 'has_nid', this.value === 'yes')" required>
+                                <span class="ml-2">No</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div id="nid-details" class="${applicant.nidInfo.has_nid ? 'block' : 'hidden'}">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
-                                <label class="block text-gray-700 mb-2">Passport Number *</label>
+                                <label class="block text-gray-700 mb-2">NID Number *</label>
                                 <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                                       value="${applicant.passportInfo.passportNumber || ''}" 
-                                       onchange="updateApplicantData('passportInfo', 'passportNumber', this.value)" required>
+                                       value="${applicant.nidInfo.nid_number || ''}" 
+                                       onchange="updateApplicantData('nidInfo', 'nid_number', this.value)" required>
                             </div>
                             <div>
-                                <label class="block text-gray-700 mb-2">Country of Issue *</label>
+                                <label class="block text-gray-700 mb-2">Issuing Authority *</label>
                                 <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                                       value="${applicant.passportInfo.countryOfIssue || ''}" 
-                                       onchange="updateApplicantData('passportInfo', 'countryOfIssue', this.value)" required>
+                                       value="${applicant.nidInfo.nid_issuing_authority || ''}" 
+                                       onchange="updateApplicantData('nidInfo', 'nid_issuing_authority', this.value)" required>
                             </div>
                             <div>
-                                <label class="block text-gray-700 mb-2">Date of Issue *</label>
+                                <label class="block text-gray-700 mb-2">Issue Date (If applicable)</label>
                                 <input type="date" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                                       value="${applicant.passportInfo.dateOfIssue || ''}" 
-                                       onchange="updateApplicantData('passportInfo', 'dateOfIssue', this.value)" required>
-                            </div>
-                            <div>
-                                <label class="block text-gray-700 mb-2">Date of Expiry *</label>
-                                <input type="date" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                                       value="${applicant.passportInfo.dateOfExpiry || ''}" 
-                                       onchange="updateApplicantData('passportInfo', 'dateOfExpiry', this.value)" required>
+                                       value="${applicant.nidInfo.nid_isue_date || ''}" 
+                                       onchange="updateApplicantData('nidInfo', 'nid_isue_date', this.value)">
                             </div>
                         </div>
-                        <p class="text-sm text-gray-500 mt-4">* Required fields</p>
-                    `;
-                    
-                case 1: // Contact Information
-                    return `
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label class="block text-gray-700 mb-2">Email Address *</label>
-                                <input type="email" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                                       value="${applicant.contactInfo.email || ''}" 
-                                       onchange="updateApplicantData('contactInfo', 'email', this.value)" required>
-                            </div>
-                            <div>
-                                <label class="block text-gray-700 mb-2">Phone Number *</label>
-                                <input type="tel" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                                       value="${applicant.contactInfo.phone || ''}" 
-                                       onchange="updateApplicantData('contactInfo', 'phone', this.value)" required>
+                    </div>
+                </div>
+                <p class="text-sm text-gray-500 mt-4">* Required fields</p>
+            `;
+        }
+
+        // Generate Contact Information step with multiple fields
+        function generateContactInfoStep(applicant) {
+            let emailsHTML = '';
+            applicant.contactInfo.emails.forEach((email, index) => {
+                emailsHTML += `
+                    <div class="dynamic-field-group flex items-end">
+                        <div class="flex-1">
+                            <label class="block text-gray-700 mb-2">Email Address ${index > 0 ? index + 1 : ''}</label>
+                            <input type="email" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                   value="${email}" 
+                                   onchange="updateContactArrayData('emails', ${index}, this.value)" ${index === 0 ? 'required' : ''}>
+                        </div>
+                        ${index > 0 ? `
+                            <button type="button" class="ml-2 bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg" onclick="removeContactField('emails', ${index})">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        ` : ''}
+                    </div>
+                `;
+            });
+            
+            let phonesHTML = '';
+            applicant.contactInfo.phones.forEach((phone, index) => {
+                phonesHTML += `
+                    <div class="dynamic-field-group flex items-end">
+                        <div class="flex-1">
+                            <label class="block text-gray-700 mb-2">Phone Number ${index > 0 ? index + 1 : ''}</label>
+                            <input type="tel" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                   value="${phone}" 
+                                   onchange="updateContactArrayData('phones', ${index}, this.value)" ${index === 0 ? 'required' : ''}>
+                        </div>
+                        ${index > 0 ? `
+                            <button type="button" class="ml-2 bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg" onclick="removeContactField('phones', ${index})">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        ` : ''}
+                    </div>
+                `;
+            });
+            
+            let addressesHTML = '';
+            applicant.contactInfo.addresses.forEach((address, index) => {
+                addressesHTML += `
+                    <div class="address-group">
+                        <div class="flex justify-between items-center mb-4">
+                            <h4 class="font-medium text-gray-700">Address ${index + 1}</h4>
+                            ${index > 0 ? `
+                                <button type="button" class="bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded-lg text-sm" onclick="removeContactField('addresses', ${index})">
+                                    Remove Address
+                                </button>
+                            ` : ''}
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="md:col-span-2">
+                                <label class="block text-gray-700 mb-2">Line 1 *</label>
+                                <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                       value="${address.line1 || ''}" 
+                                       onchange="updateContactAddressData(${index}, 'line1', this.value)" required>
                             </div>
                             <div class="md:col-span-2">
-                                <label class="block text-gray-700 mb-2">Address *</label>
-                                <textarea class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" rows="3"
-                                          onchange="updateApplicantData('contactInfo', 'address', this.value)" required>${applicant.contactInfo.address || ''}</textarea>
+                                <label class="block text-gray-700 mb-2">Line 2</label>
+                                <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                       value="${address.line2 || ''}" 
+                                       onchange="updateContactAddressData(${index}, 'line2', this.value)">
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 mb-2">City *</label>
+                                <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                       value="${address.city || ''}" 
+                                       onchange="updateContactAddressData(${index}, 'city', this.value)" required>
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 mb-2">State *</label>
+                                <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                       value="${address.state || ''}" 
+                                       onchange="updateContactAddressData(${index}, 'state', this.value)" required>
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 mb-2">Postal Code *</label>
+                                <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                       value="${address.postalCode || ''}" 
+                                       onchange="updateContactAddressData(${index}, 'postalCode', this.value)" required>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="inline-flex items-center">
+                                    <input type="checkbox" class="h-4 w-4 text-blue-600" 
+                                           ${address.isCorrespondence ? 'checked' : ''}
+                                           onchange="updateContactAddressData(${index}, 'isCorrespondence', this.checked)">
+                                    <span class="ml-2">Is this address also your correspondence address?</span>
+                                </label>
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 mb-2">How long have you lived at this address?</label>
+                                <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                       value="${address.livedInFor || ''}" 
+                                       onchange="updateContactAddressData(${index}, 'livedInFor', this.value)">
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 mb-2">What is the ownership status of your home?</label>
+                                <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        onchange="updateContactAddressData(${index}, 'ownershipStatus', this.value)">
+                                    <option value="">Select</option>
+                                    <option value="owned" ${address.ownershipStatus === 'owned' ? 'selected' : ''}>Owned</option>
+                                    <option value="rented" ${address.ownershipStatus === 'rented' ? 'selected' : ''}>Rented</option>
+                                    <option value="leased" ${address.ownershipStatus === 'leased' ? 'selected' : ''}>Leased</option>
+                                    <option value="other" ${address.ownershipStatus === 'other' ? 'selected' : ''}>Other</option>
+                                </select>
                             </div>
                         </div>
-                        <p class="text-sm text-gray-500 mt-4">* Required fields</p>
-                    `;
+                    </div>
+                `;
+            });
+            
+            // Fixed: Generate options for preferred phone without showing (Phone 2)
+            let phoneOptionsHTML = '';
+            applicant.contactInfo.phones.forEach((phone, index) => {
+                if (phone) {
+                    phoneOptionsHTML += `<option value="${phone}" ${applicant.contactInfo.preferred_phone_no === phone ? 'selected' : ''}>${phone}</option>`;
+                }
+            });
+            
+            return `
+                <div class="space-y-6">
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-800 mb-4">Email Addresses</h3>
+                        ${emailsHTML}
+                        <button type="button" class="mt-2 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg flex items-center" onclick="addContactField('emails')">
+                            <i class="fas fa-plus mr-2"></i> Add Another Email
+                        </button>
+                    </div>
                     
-                // Other steps would follow similar pattern with required fields
-                // For brevity, I'll include just the first two as examples
-                default:
-                    return `
-                        <div class="text-center py-8">
-                            <i class="fas fa-tools text-4xl text-gray-400 mb-4"></i>
-                            <h3 class="text-xl font-medium text-gray-700">${state.steps[stepIndex].name}</h3>
-                            <p class="text-gray-500 mt-2">This section is for demonstration purposes only.</p>
-                            <div class="mt-6 p-4 bg-blue-50 rounded-lg">
-                                <p class="text-blue-700">In a real application, this would contain the actual form fields for ${state.steps[stepIndex].name.toLowerCase()}.</p>
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-800 mb-4">Phone Numbers</h3>
+                        ${phonesHTML}
+                        <button type="button" class="mt-2 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg flex items-center" onclick="addContactField('phones')">
+                            <i class="fas fa-plus mr-2"></i> Add Another Phone
+                        </button>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-800 mb-4">Addresses</h3>
+                        ${addressesHTML}
+                        <button type="button" class="mt-2 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg flex items-center" onclick="addContactField('addresses')">
+                            <i class="fas fa-plus mr-2"></i> Add Another Address
+                        </button>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-gray-700 mb-2">What is your preferred contact number?</label>
+                        <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                onchange="updateApplicantData('contactInfo', 'preferred_phone_no', this.value)">
+                            <option value="">Select</option>
+                            ${phoneOptionsHTML}
+                        </select>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Generate Family Information step
+        function generateFamilyInfoStep(applicant) {
+            let familyMembersHTML = '';
+            applicant.familyInfo.familyMembers.forEach((member, index) => {
+                familyMembersHTML += `
+                    <div class="family-member-group">
+                        <div class="flex justify-between items-center mb-4">
+                            <h4 class="font-medium text-gray-700">Family Member ${index + 1}</h4>
+                            <button type="button" class="bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded-lg text-sm" onclick="removeFamilyMember(${index})">
+                                Remove Member
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-gray-700 mb-2">Relation *</label>
+                                <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        onchange="updateFamilyMemberData(${index}, 'relation', this.value)" required>
+                                    <option value="">Select</option>
+                                    <option value="father" ${member.relation === 'father' ? 'selected' : ''}>Father</option>
+                                    <option value="mother" ${member.relation === 'mother' ? 'selected' : ''}>Mother</option>
+                                    <option value="wife" ${member.relation === 'wife' ? 'selected' : ''}>Wife</option>
+                                    <option value="husband" ${member.relation === 'husband' ? 'selected' : ''}>Husband</option>
+                                    <option value="son" ${member.relation === 'son' ? 'selected' : ''}>Son</option>
+                                    <option value="daughter" ${member.relation === 'daughter' ? 'selected' : ''}>Daughter</option>
+                                    <option value="brother" ${member.relation === 'brother' ? 'selected' : ''}>Brother</option>
+                                    <option value="sister" ${member.relation === 'sister' ? 'selected' : ''}>Sister</option>
+                                    <option value="other" ${member.relation === 'other' ? 'selected' : ''}>Other</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 mb-2">Given Name *</label>
+                                <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                       value="${member.givenName || ''}" 
+                                       onchange="updateFamilyMemberData(${index}, 'givenName', this.value)" required>
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 mb-2">Family Name *</label>
+                                <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                       value="${member.familyName || ''}" 
+                                       onchange="updateFamilyMemberData(${index}, 'familyName', this.value)" required>
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 mb-2">Date of Birth</label>
+                                <input type="date" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                       value="${member.dob || ''}" 
+                                       onchange="updateFamilyMemberData(${index}, 'dob', this.value)">
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 mb-2">Country of Nationality</label>
+                                <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                       value="${member.nationality || ''}" 
+                                       onchange="updateFamilyMemberData(${index}, 'nationality', this.value)">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="inline-flex items-center">
+                                    <input type="checkbox" class="h-4 w-4 text-blue-600" 
+                                           ${member.liveWith ? 'checked' : ''}
+                                           onchange="updateFamilyMemberData(${index}, 'liveWith', this.checked)">
+                                    <span class="ml-2">Do they currently live with you?</span>
+                                </label>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="inline-flex items-center">
+                                    <input type="checkbox" class="h-4 w-4 text-blue-600" 
+                                           ${member.travellingUK ? 'checked' : ''}
+                                           onchange="updateFamilyMemberData(${index}, 'travellingUK', this.checked)">
+                                    <span class="ml-2">Will they be travelling with you to the UK?</span>
+                                </label>
+                            </div>
+                            <div id="passport-section-${index}" class="md:col-span-2 ${member.travellingUK ? 'block' : 'hidden'}">
+                                <label class="block text-gray-700 mb-2">Their Passport Number *</label>
+                                <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                       value="${member.passportNo || ''}" 
+                                       onchange="updateFamilyMemberData(${index}, 'passportNo', this.value)" ${member.travellingUK ? 'required' : ''}>
                             </div>
                         </div>
-                    `;
+                    </div>
+                `;
+            });
+            
+            return `
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-gray-700 mb-2">What is your relationship status? *</label>
+                        <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                onchange="updateApplicantData('familyInfo', 'relationshipStatus', this.value)" required>
+                            <option value="">Select</option>
+                            <option value="single" ${applicant.familyInfo.relationshipStatus === 'single' ? 'selected' : ''}>Single</option>
+                            <option value="married" ${applicant.familyInfo.relationshipStatus === 'married' ? 'selected' : ''}>Married</option>
+                            <option value="divorced" ${applicant.familyInfo.relationshipStatus === 'divorced' ? 'selected' : ''}>Divorced</option>
+                            <option value="widowed" ${applicant.familyInfo.relationshipStatus === 'widowed' ? 'selected' : ''}>Widowed</option>
+                            <option value="separated" ${applicant.familyInfo.relationshipStatus === 'separated' ? 'selected' : ''}>Separated</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-800 mb-4">Family Members</h3>
+                        ${familyMembersHTML || '<p class="text-gray-500">No family members added yet.</p>'}
+                        <button type="button" class="mt-2 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg flex items-center" onclick="addFamilyMember()">
+                            <i class="fas fa-plus mr-2"></i> Add Family Member
+                        </button>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-gray-700 mb-2">Do you have any family in the UK?</label>
+                        <div class="flex space-x-4">
+                            <label class="inline-flex items-center">
+                                <input type="radio" name="has_relative_in_uk" value="yes" class="h-4 w-4 text-blue-600" 
+                                       ${applicant.familyInfo.hasRelativeInUK === true ? 'checked' : ''}
+                                       onchange="updateApplicantData('familyInfo', 'hasRelativeInUK', this.value === 'yes')">
+                                <span class="ml-2">Yes</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="radio" name="has_relative_in_uk" value="no" class="h-4 w-4 text-blue-600"
+                                       ${applicant.familyInfo.hasRelativeInUK === false ? 'checked' : ''}
+                                       onchange="updateApplicantData('familyInfo', 'hasRelativeInUK', this.value === 'yes')">
+                                <span class="ml-2">No</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    ${applicant.familyInfo.hasRelativeInUK ? `
+                        <div class="address-group">
+                            <h4 class="font-medium text-gray-700 mb-4">Relative's Address in UK</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="md:col-span-2">
+                                    <label class="block text-gray-700 mb-2">Line 1</label>
+                                    <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                           value="${applicant.familyInfo.relativeAddress.line1 || ''}" 
+                                           onchange="updateFamilyRelativeAddress('line1', this.value)">
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-gray-700 mb-2">Line 2</label>
+                                    <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                           value="${applicant.familyInfo.relativeAddress.line2 || ''}" 
+                                           onchange="updateFamilyRelativeAddress('line2', this.value)">
+                                </div>
+                                <div>
+                                    <label class="block text-gray-700 mb-2">City</label>
+                                    <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                           value="${applicant.familyInfo.relativeAddress.city || ''}" 
+                                           onchange="updateFamilyRelativeAddress('city', this.value)">
+                                </div>
+                                <div>
+                                    <label class="block text-gray-700 mb-2">State</label>
+                                    <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                           value="${applicant.familyInfo.relativeAddress.state || ''}" 
+                                           onchange="updateFamilyRelativeAddress('state', this.value)">
+                                </div>
+                                <div>
+                                    <label class="block text-gray-700 mb-2">Postal Code</label>
+                                    <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                           value="${applicant.familyInfo.relativeAddress.postalCode || ''}" 
+                                           onchange="updateFamilyRelativeAddress('postalCode', this.value)">
+                                </div>
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        // Generate Accommodation Details step
+        function generateAccommodationDetailsStep(applicant) {
+            let addressesHTML = '';
+            applicant.accommodationDetails.addresses.forEach((address, index) => {
+                addressesHTML += `
+                    <div class="address-group">
+                        <div class="flex justify-between items-center mb-4">
+                            <h4 class="font-medium text-gray-700">Accommodation Address ${index + 1}</h4>
+                            ${index > 0 ? `
+                                <button type="button" class="bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded-lg text-sm" onclick="removeAccommodationField('addresses', ${index})">
+                                    Remove Address
+                                </button>
+                            ` : ''}
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-gray-700 mb-2">Hotel Name</label>
+                                <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                       value="${applicant.accommodationDetails.hotels[index] || ''}" 
+                                       onchange="updateAccommodationArrayData('hotels', ${index}, this.value)">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-gray-700 mb-2">Line 1</label>
+                                <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                       value="${address.line1 || ''}" 
+                                       onchange="updateAccommodationAddressData(${index}, 'line1', this.value)">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-gray-700 mb-2">Line 2</label>
+                                <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                       value="${address.line2 || ''}" 
+                                       onchange="updateAccommodationAddressData(${index}, 'line2', this.value)">
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 mb-2">City</label>
+                                <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                       value="${address.city || ''}" 
+                                       onchange="updateAccommodationAddressData(${index}, 'city', this.value)">
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 mb-2">State</label>
+                                <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                       value="${address.state || ''}" 
+                                       onchange="updateAccommodationAddressData(${index}, 'state', this.value)">
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 mb-2">Postal Code</label>
+                                <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                       value="${address.postalCode || ''}" 
+                                       onchange="updateAccommodationAddressData(${index}, 'postalCode', this.value)">
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            return `
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-gray-700 mb-2">Do you have an address for where you are going to stay in the UK?</label>
+                        <div class="flex space-x-4">
+                            <label class="inline-flex items-center">
+                                <input type="radio" name="ad_have_address" value="yes" class="h-4 w-4 text-blue-600" 
+                                       ${applicant.accommodationDetails.hasAddress === true ? 'checked' : ''}
+                                       onchange="updateApplicantData('accommodationDetails', 'hasAddress', this.value === 'yes')">
+                                <span class="ml-2">Yes</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="radio" name="ad_have_address" value="no" class="h-4 w-4 text-blue-600"
+                                       ${applicant.accommodationDetails.hasAddress === false ? 'checked' : ''}
+                                       onchange="updateApplicantData('accommodationDetails', 'hasAddress', this.value === 'yes')">
+                                <span class="ml-2">No</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-800 mb-4">Accommodation Addresses</h3>
+                        ${addressesHTML}
+                        <button type="button" class="mt-2 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg flex items-center" onclick="addAccommodationField('addresses')">
+                            <i class="fas fa-plus mr-2"></i> Add Another Address
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Generate Employment Information step
+        function generateEmploymentInfoStep(applicant) {
+            return `
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-gray-700 mb-2">What is your employment status? *</label>
+                        <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                onchange="updateApplicantData('employmentInfo', 'employmentStatus', this.value)" required>
+                            <option value="">Select</option>
+                            <option value="employed" ${applicant.employmentInfo.employmentStatus === 'employed' ? 'selected' : ''}>Employed</option>
+                            <option value="self-employed" ${applicant.employmentInfo.employmentStatus === 'self-employed' ? 'selected' : ''}>Self-Employed</option>
+                            <option value="student" ${applicant.employmentInfo.employmentStatus === 'student' ? 'selected' : ''}>Student</option>
+                            <option value="unemployed" ${applicant.employmentInfo.employmentStatus === 'unemployed' ? 'selected' : ''}>Unemployed</option>
+                            <option value="retired" ${applicant.employmentInfo.employmentStatus === 'retired' ? 'selected' : ''}>Retired</option>
+                        </select>
+                    </div>
+                    
+                    <div id="employment-details">
+                        ${applicant.employmentInfo.employmentStatus === 'self-employed' ? `
+                            <div>
+                                <label class="block text-gray-700 mb-2">What is your job? *</label>
+                                <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                       value="${applicant.employmentInfo.jobDetails || ''}" 
+                                       onchange="updateApplicantData('employmentInfo', 'jobDetails', this.value)" required>
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 mb-2">How much do you earn from this job in a year? *</label>
+                                <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                       value="${applicant.employmentInfo.yearlyEarning || ''}" 
+                                       onchange="updateApplicantData('employmentInfo', 'yearlyEarning', this.value)" required>
+                            </div>
+                        ` : ''}
+                        
+                        ${applicant.employmentInfo.employmentStatus === 'employed' ? `
+                            <div>
+                                <label class="block text-gray-700 mb-2">Job Title *</label>
+                                <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                       value="${applicant.employmentInfo.jobTitle || ''}" 
+                                       onchange="updateApplicantData('employmentInfo', 'jobTitle', this.value)" required>
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 mb-2">How much do you earn each month - after tax? *</label>
+                                <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                       value="${applicant.employmentInfo.monthlyIncome || ''}" 
+                                       onchange="updateApplicantData('employmentInfo', 'monthlyIncome', this.value)" required>
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 mb-2">Job Description</label>
+                                <textarea class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" rows="3"
+                                          onchange="updateApplicantData('employmentInfo', 'jobDescription', this.value)">${applicant.employmentInfo.jobDescription || ''}</textarea>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+                <p class="text-sm text-gray-500 mt-4">* Required fields</p>
+            `;
+        }
+
+        // Generate Income & Expenditure step
+        function generateIncomeExpenditureStep(applicant) {
+            let paymentInfoHTML = '';
+            applicant.incomeExpenditure.paymentInfo.forEach((payment, index) => {
+                paymentInfoHTML += `
+                    <div class="dynamic-field-group">
+                        <div class="flex justify-between items-center mb-4">
+                            <h4 class="font-medium text-gray-700">Payment Source ${index + 1}</h4>
+                            ${index > 0 ? `
+                                <button type="button" class="bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded-lg text-sm" onclick="removePaymentInfo(${index})">
+                                    Remove Payment
+                                </button>
+                            ` : ''}
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-gray-700 mb-2">Currency</label>
+                                <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                       value="${payment.currency || ''}" 
+                                       onchange="updatePaymentInfoData(${index}, 'currency', this.value)">
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 mb-2">Amount</label>
+                                <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                       value="${payment.amount || ''}" 
+                                       onchange="updatePaymentInfoData(${index}, 'amount', this.value)">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-gray-700 mb-2">What are you being paid for</label>
+                                <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                       value="${payment.paidFor || ''}" 
+                                       onchange="updatePaymentInfoData(${index}, 'paidFor', this.value)">
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            return `
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-gray-700 mb-2">Do you have another or any savings?</label>
+                        <div class="flex space-x-4">
+                            <label class="inline-flex items-center">
+                                <input type="radio" name="have_savings" value="yes" class="h-4 w-4 text-blue-600" 
+                                       ${applicant.incomeExpenditure.haveSavings === true ? 'checked' : ''}
+                                       onchange="updateApplicantData('incomeExpenditure', 'haveSavings', this.value === 'yes')">
+                                <span class="ml-2">Yes</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="radio" name="have_savings" value="no" class="h-4 w-4 text-blue-600"
+                                       ${applicant.incomeExpenditure.haveSavings === false ? 'checked' : ''}
+                                       onchange="updateApplicantData('incomeExpenditure', 'haveSavings', this.value === 'yes')">
+                                <span class="ml-2">No</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-gray-700 mb-2">How much money are you personally planning to spend on your visit to the UK? *</label>
+                        <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                               value="${applicant.incomeExpenditure.planningToExpense || ''}" 
+                               onchange="updateApplicantData('incomeExpenditure', 'planningToExpense', this.value)" required>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-gray-700 mb-2">What is the total amount of money you spend each month?</label>
+                        <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                               value="${applicant.incomeExpenditure.totalExpenseInBd || ''}" 
+                               onchange="updateApplicantData('incomeExpenditure', 'totalExpenseInBd', this.value)">
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-800 mb-4">Payment Information</h3>
+                        ${paymentInfoHTML}
+                        <button type="button" class="mt-2 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg flex items-center" onclick="addPaymentInfo()">
+                            <i class="fas fa-plus mr-2"></i> Add Payment Source
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Generate Travel Information step
+        function generateTravelInfoStep(applicant) {
+            return `
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-gray-700 mb-2">What is the main reason for your visit to the UK? *</label>
+                        <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                onchange="updateApplicantData('travelInfo', 'visitMainReason', this.value)" required>
+                            <option value="">Select</option>
+                            <option value="tourism" ${applicant.travelInfo.visitMainReason === 'tourism' ? 'selected' : ''}>Tourism</option>
+                            <option value="business" ${applicant.travelInfo.visitMainReason === 'business' ? 'selected' : ''}>Business</option>
+                            <option value="study" ${applicant.travelInfo.visitMainReason === 'study' ? 'selected' : ''}>Study</option>
+                            <option value="family" ${applicant.travelInfo.visitMainReason === 'family' ? 'selected' : ''}>Family Visit</option>
+                            <option value="medical" ${applicant.travelInfo.visitMainReason === 'medical' ? 'selected' : ''}>Medical Treatment</option>
+                        </select>
+                    </div>
+                    
+                    <div id="travel-reason-details">
+                        ${applicant.travelInfo.visitMainReason === 'business' ? `
+                            <div>
+                                <label class="block text-gray-700 mb-2">What is the main reason for your business visit to the UK?</label>
+                                <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        onchange="updateApplicantData('travelInfo', 'businessReasonToVisitUk', this.value)">
+                                    <option value="">Select</option>
+                                    <option value="meetings" ${applicant.travelInfo.businessReasonToVisitUk === 'meetings' ? 'selected' : ''}>Attend business meetings</option>
+                                    <option value="training" ${applicant.travelInfo.businessReasonToVisitUk === 'training' ? 'selected' : ''}>Business-related training</option>
+                                    <option value="conference" ${applicant.travelInfo.businessReasonToVisitUk === 'conference' ? 'selected' : ''}>Attend conference</option>
+                                    <option value="negotiations" ${applicant.travelInfo.businessReasonToVisitUk === 'negotiations' ? 'selected' : ''}>Business negotiations</option>
+                                </select>
+                            </div>
+                        ` : ''}
+                        
+                        ${applicant.travelInfo.visitMainReason === 'tourism' ? `
+                            <div>
+                                <label class="block text-gray-700 mb-2">What is the main reason for your holiday visit to the UK?</label>
+                                <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        onchange="updateApplicantData('travelInfo', 'tourismReasonToVisitUk', this.value)">
+                                    <option value="">Select</option>
+                                    <option value="tourist" ${applicant.travelInfo.tourismReasonToVisitUk === 'tourist' ? 'selected' : ''}>Tourist</option>
+                                    <option value="family" ${applicant.travelInfo.tourismReasonToVisitUk === 'family' ? 'selected' : ''}>Visiting family</option>
+                                    <option value="friends" ${applicant.travelInfo.tourismReasonToVisitUk === 'friends' ? 'selected' : ''}>Visiting friends</option>
+                                </select>
+                            </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div>
+                        <label class="block text-gray-700 mb-2">Give details of the main purpose of your visit and anything else you plan to do on your trip.</label>
+                        <textarea class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" rows="3"
+                                  maxlength="500"
+                                  onchange="updateApplicantData('travelInfo', 'activities', this.value)">${applicant.travelInfo.activities || ''}</textarea>
+                        <p class="text-sm text-gray-500 mt-1">Maximum 500 characters</p>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-gray-700 mb-2">Date you plan to arrive in the UK *</label>
+                            <input type="date" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                   value="${applicant.travelInfo.arrivalDate || ''}" 
+                                   onchange="updateApplicantData('travelInfo', 'arrivalDate', this.value)" required>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 mb-2">Date you plan to leave the UK *</label>
+                            <input type="date" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                   value="${applicant.travelInfo.leaveDate || ''}" 
+                                   onchange="updateApplicantData('travelInfo', 'leaveDate', this.value)" required>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Generate Travel History step
+        function generateTravelHistoryStep(applicant) {
+            return `
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-gray-700 mb-2">Travel History</label>
+                        <textarea class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" rows="6"
+                                  placeholder="Please provide details of your travel history including countries visited, dates, and purpose of visit"
+                                  onchange="updateApplicantData('travelHistory', 'history', this.value)">${applicant.travelHistory.history || ''}</textarea>
+                        <p class="text-sm text-gray-500 mt-1">Provide details of countries visited, dates, and purpose of visit</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Add a new contact field (email, phone, or address)
+        function addContactField(type) {
+            const applicant = state.applicants[state.currentApplicant];
+            
+            if (type === 'emails') {
+                applicant.contactInfo.emails.push('');
+            } else if (type === 'phones') {
+                applicant.contactInfo.phones.push('');
+            } else if (type === 'addresses') {
+                applicant.contactInfo.addresses.push({
+                    line1: '',
+                    line2: '',
+                    city: '',
+                    state: '',
+                    postalCode: '',
+                    isCorrespondence: false,
+                    livedInFor: '',
+                    ownershipStatus: ''
+                });
             }
+            
+            generateFormSteps();
+            saveToLocalStorage();
+        }
+
+        // Remove a contact field
+        function removeContactField(type, index) {
+            const applicant = state.applicants[state.currentApplicant];
+            
+            if (type === 'emails') {
+                applicant.contactInfo.emails.splice(index, 1);
+            } else if (type === 'phones') {
+                applicant.contactInfo.phones.splice(index, 1);
+            } else if (type === 'addresses') {
+                applicant.contactInfo.addresses.splice(index, 1);
+            }
+            
+            generateFormSteps();
+            saveToLocalStorage();
+        }
+
+        // Update contact array data (emails or phones)
+        function updateContactArrayData(field, index, value) {
+            const applicant = state.applicants[state.currentApplicant];
+            applicant.contactInfo[field][index] = value;
+            saveToLocalStorage();
+        }
+
+        // Update contact address data
+        function updateContactAddressData(addressIndex, field, value) {
+            const applicant = state.applicants[state.currentApplicant];
+            applicant.contactInfo.addresses[addressIndex][field] = value;
+            saveToLocalStorage();
+        }
+
+        // Add a new family member
+        function addFamilyMember() {
+            const applicant = state.applicants[state.currentApplicant];
+            applicant.familyInfo.familyMembers.push({
+                relation: '',
+                givenName: '',
+                familyName: '',
+                dob: '',
+                nationality: '',
+                liveWith: false,
+                travellingUK: false,
+                passportNo: ''
+            });
+            
+            generateFormSteps();
+            saveToLocalStorage();
+        }
+
+        // Remove a family member
+        function removeFamilyMember(index) {
+            const applicant = state.applicants[state.currentApplicant];
+            applicant.familyInfo.familyMembers.splice(index, 1);
+            
+            generateFormSteps();
+            saveToLocalStorage();
+        }
+
+        // Update family member data
+        function updateFamilyMemberData(memberIndex, field, value) {
+            const applicant = state.applicants[state.currentApplicant];
+            applicant.familyInfo.familyMembers[memberIndex][field] = value;
+            
+            // Show/hide passport section based on travellingUK
+            if (field === 'travellingUK') {
+                const passportSection = document.getElementById(`passport-section-${memberIndex}`);
+                if (passportSection) {
+                    if (value) {
+                        passportSection.classList.remove('hidden');
+                        passportSection.classList.add('block');
+                    } else {
+                        passportSection.classList.remove('block');
+                        passportSection.classList.add('hidden');
+                    }
+                }
+            }
+            
+            saveToLocalStorage();
+        }
+
+        // Update family relative address
+        function updateFamilyRelativeAddress(field, value) {
+            const applicant = state.applicants[state.currentApplicant];
+            applicant.familyInfo.relativeAddress[field] = value;
+            saveToLocalStorage();
+        }
+
+        // Add a new accommodation field (hotels or addresses)
+        function addAccommodationField(type) {
+            const applicant = state.applicants[state.currentApplicant];
+            
+            if (type === 'hotels') {
+                applicant.accommodationDetails.hotels.push('');
+            } else if (type === 'addresses') {
+                applicant.accommodationDetails.addresses.push({
+                    line1: '',
+                    line2: '',
+                    city: '',
+                    state: '',
+                    postalCode: ''
+                });
+            }
+            
+            generateFormSteps();
+            saveToLocalStorage();
+        }
+
+        // Remove an accommodation field
+        function removeAccommodationField(type, index) {
+            const applicant = state.applicants[state.currentApplicant];
+            
+            if (type === 'hotels') {
+                applicant.accommodationDetails.hotels.splice(index, 1);
+            } else if (type === 'addresses') {
+                applicant.accommodationDetails.addresses.splice(index, 1);
+            }
+            
+            generateFormSteps();
+            saveToLocalStorage();
+        }
+
+        // Update accommodation array data (hotels)
+        function updateAccommodationArrayData(field, index, value) {
+            const applicant = state.applicants[state.currentApplicant];
+            applicant.accommodationDetails[field][index] = value;
+            saveToLocalStorage();
+        }
+
+        // Update accommodation address data
+        function updateAccommodationAddressData(addressIndex, field, value) {
+            const applicant = state.applicants[state.currentApplicant];
+            applicant.accommodationDetails.addresses[addressIndex][field] = value;
+            saveToLocalStorage();
+        }
+
+        // Add a new payment info
+        function addPaymentInfo() {
+            const applicant = state.applicants[state.currentApplicant];
+            applicant.incomeExpenditure.paymentInfo.push({
+                currency: '',
+                amount: '',
+                paidFor: ''
+            });
+            
+            generateFormSteps();
+            saveToLocalStorage();
+        }
+
+        // Remove a payment info
+        function removePaymentInfo(index) {
+            const applicant = state.applicants[state.currentApplicant];
+            applicant.incomeExpenditure.paymentInfo.splice(index, 1);
+            
+            generateFormSteps();
+            saveToLocalStorage();
+        }
+
+        // Update payment info data
+        function updatePaymentInfoData(paymentIndex, field, value) {
+            const applicant = state.applicants[state.currentApplicant];
+            applicant.incomeExpenditure.paymentInfo[paymentIndex][field] = value;
+            saveToLocalStorage();
         }
 
         // Update applicant data when form fields change
         function updateApplicantData(category, field, value) {
             state.applicants[state.currentApplicant][category][field] = value;
+            
+            // Special handling for NID info
+            if (category === 'nidInfo' && field === 'has_nid') {
+                const nidDetails = document.getElementById('nid-details');
+                if (value) {
+                    nidDetails.classList.remove('hidden');
+                    nidDetails.classList.add('block');
+                } else {
+                    nidDetails.classList.remove('block');
+                    nidDetails.classList.add('hidden');
+                }
+            }
+            
+            // Special handling for employment status
+            if (category === 'employmentInfo' && field === 'employmentStatus') {
+                // Regenerate form to show/hide employment details
+                generateFormSteps();
+            }
+            
+            // Special handling for travel reason
+            if (category === 'travelInfo' && field === 'visitMainReason') {
+                // Regenerate form to show/hide travel reason details
+                generateFormSteps();
+            }
             
             // Check if current applicant is now complete
             if (isApplicantComplete(state.currentApplicant)) {
@@ -791,6 +1833,15 @@
                 document.getElementById('prev-btn').classList.remove('hidden');
             }
             
+            // Fixed: Show submit button only on summary step
+            if (state.currentStep === state.totalSteps - 1 && state.currentApplicant === state.totalApplicants - 1) {
+                document.getElementById('submit-btn').classList.remove('hidden');
+                document.getElementById('next-btn').classList.add('hidden');
+            } else {
+                document.getElementById('submit-btn').classList.add('hidden');
+                document.getElementById('next-btn').classList.remove('hidden');
+            }
+            
             // Update progress indicators
             updateProgressIndicators();
         }
@@ -831,6 +1882,15 @@
                         ${generateSummaryContent()}
                     </div>
                     
+                    <div class="mt-8 flex justify-between">
+                        <button id="download-json" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition duration-300 flex items-center">
+                            <i class="fas fa-download mr-2"></i> Download JSON
+                        </button>
+                        <button id="submit-final" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-lg transition duration-300">
+                            Submit Application
+                        </button>
+                    </div>
+                    
                     <div class="mt-8 p-4 bg-blue-50 rounded-lg">
                         <div class="flex items-start">
                             <div class="flex-shrink-0">
@@ -850,11 +1910,15 @@
             
             formStepsContainer.appendChild(summaryElement);
             
+            // Add event listeners for summary buttons
+            document.getElementById('download-json').addEventListener('click', downloadJSON);
+            document.getElementById('submit-final').addEventListener('click', submitApplication);
+            
             // Update buttons for summary view
             document.getElementById('prev-btn').classList.remove('hidden');
             document.getElementById('next-btn').classList.add('hidden');
             document.getElementById('next-applicant-btn').classList.add('hidden');
-            document.getElementById('submit-btn').classList.remove('hidden');
+            document.getElementById('submit-btn').classList.add('hidden');
             
             // Update progress bars to show completion
             document.getElementById('individual-progress-bar').style.width = '100%';
@@ -880,21 +1944,81 @@
                                 <!-- Passport Information -->
                                 <div class="summary-item">
                                     <h4 class="font-medium text-gray-700">Passport Information</h4>
-                                    <p class="text-gray-600">Number: ${applicant.passportInfo.passportNumber || 'Not provided'}</p>
-                                    <p class="text-gray-600">Country: ${applicant.passportInfo.countryOfIssue || 'Not provided'}</p>
-                                    <p class="text-gray-600">Issue: ${applicant.passportInfo.dateOfIssue || 'Not provided'}</p>
-                                    <p class="text-gray-600">Expiry: ${applicant.passportInfo.dateOfExpiry || 'Not provided'}</p>
+                                    <p class="text-gray-600">Given Name: ${applicant.passportInfo.pp_given_name || 'Not provided'}</p>
+                                    <p class="text-gray-600">Family Name: ${applicant.passportInfo.pp_family_name || 'Not provided'}</p>
+                                    <p class="text-gray-600">Gender: ${applicant.passportInfo.pp_gender || 'Not provided'}</p>
+                                    <p class="text-gray-600">Passport Number: ${applicant.passportInfo.pp_number || 'Not provided'}</p>
+                                    <p class="text-gray-600">Issue Date: ${applicant.passportInfo.pp_issue_date || 'Not provided'}</p>
+                                    <p class="text-gray-600">Expiry Date: ${applicant.passportInfo.pp_expiry_date || 'Not provided'}</p>
+                                </div>
+                                
+                                <!-- NID Information -->
+                                <div class="summary-item">
+                                    <h4 class="font-medium text-gray-700">NID Information</h4>
+                                    <p class="text-gray-600">Has NID: ${applicant.nidInfo.has_nid !== null ? (applicant.nidInfo.has_nid ? 'Yes' : 'No') : 'Not provided'}</p>
+                                    ${applicant.nidInfo.has_nid ? `
+                                        <p class="text-gray-600">NID Number: ${applicant.nidInfo.nid_number || 'Not provided'}</p>
+                                        <p class="text-gray-600">Issuing Authority: ${applicant.nidInfo.nid_issuing_authority || 'Not provided'}</p>
+                                    ` : ''}
                                 </div>
                                 
                                 <!-- Contact Information -->
                                 <div class="summary-item">
                                     <h4 class="font-medium text-gray-700">Contact Information</h4>
-                                    <p class="text-gray-600">Email: ${applicant.contactInfo.email || 'Not provided'}</p>
-                                    <p class="text-gray-600">Phone: ${applicant.contactInfo.phone || 'Not provided'}</p>
-                                    <p class="text-gray-600">Address: ${applicant.contactInfo.address || 'Not provided'}</p>
+                                    <p class="text-gray-600">Emails: ${applicant.contactInfo.emails.filter(e => e).join(', ') || 'Not provided'}</p>
+                                    <p class="text-gray-600">Phones: ${applicant.contactInfo.phones.filter(p => p).join(', ') || 'Not provided'}</p>
+                                    <p class="text-gray-600">Preferred Phone: ${applicant.contactInfo.preferred_phone_no || 'Not provided'}</p>
                                 </div>
                                 
-                                <!-- Other sections would be displayed similarly -->
+                                <!-- Addresses -->
+                                <div class="summary-item">
+                                    <h4 class="font-medium text-gray-700">Addresses</h4>
+                                    ${applicant.contactInfo.addresses.map((addr, idx) => `
+                                        <div class="mb-2">
+                                            <p class="text-gray-600 font-medium">Address ${idx + 1}:</p>
+                                            <p class="text-gray-600">${addr.line1 || ''} ${addr.line2 || ''}</p>
+                                            <p class="text-gray-600">${addr.city || ''}, ${addr.state || ''} ${addr.postalCode || ''}</p>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                                
+                                <!-- Family Information -->
+                                <div class="summary-item">
+                                    <h4 class="font-medium text-gray-700">Family Information</h4>
+                                    <p class="text-gray-600">Relationship Status: ${applicant.familyInfo.relationshipStatus || 'Not provided'}</p>
+                                    <p class="text-gray-600">Family Members: ${applicant.familyInfo.familyMembers.length || '0'}</p>
+                                    <p class="text-gray-600">Has Relative in UK: ${applicant.familyInfo.hasRelativeInUK !== null ? (applicant.familyInfo.hasRelativeInUK ? 'Yes' : 'No') : 'Not provided'}</p>
+                                </div>
+                                
+                                <!-- Employment Information -->
+                                <div class="summary-item">
+                                    <h4 class="font-medium text-gray-700">Employment Information</h4>
+                                    <p class="text-gray-600">Employment Status: ${applicant.employmentInfo.employmentStatus || 'Not provided'}</p>
+                                    ${applicant.employmentInfo.employmentStatus === 'self-employed' ? `
+                                        <p class="text-gray-600">Job: ${applicant.employmentInfo.jobDetails || 'Not provided'}</p>
+                                        <p class="text-gray-600">Yearly Earning: ${applicant.employmentInfo.yearlyEarning || 'Not provided'}</p>
+                                    ` : ''}
+                                    ${applicant.employmentInfo.employmentStatus === 'employed' ? `
+                                        <p class="text-gray-600">Job Title: ${applicant.employmentInfo.jobTitle || 'Not provided'}</p>
+                                        <p class="text-gray-600">Monthly Income: ${applicant.employmentInfo.monthlyIncome || 'Not provided'}</p>
+                                    ` : ''}
+                                </div>
+                                
+                                <!-- Travel Information -->
+                                <div class="summary-item">
+                                    <h4 class="font-medium text-gray-700">Travel Information</h4>
+                                    <p class="text-gray-600">Main Reason: ${applicant.travelInfo.visitMainReason || 'Not provided'}</p>
+                                    <p class="text-gray-600">Arrival Date: ${applicant.travelInfo.arrivalDate || 'Not provided'}</p>
+                                    <p class="text-gray-600">Departure Date: ${applicant.travelInfo.leaveDate || 'Not provided'}</p>
+                                </div>
+                                
+                                <!-- Travel History -->
+                                <div class="summary-item">
+                                    <h4 class="font-medium text-gray-700">Travel History</h4>
+                                    <p class="text-gray-600">${applicant.travelHistory.history || 'Not provided'}</p>
+                                </div>
+                                
+                                <!-- Application Status -->
                                 <div class="summary-item md:col-span-2">
                                     <h4 class="font-medium text-gray-700">Application Status</h4>
                                     <p class="text-gray-600">Completed: ${applicant.completed ? 'Yes' : 'No'}</p>
@@ -907,6 +2031,24 @@
             }
             
             return summaryHTML;
+        }
+
+        // Download JSON data
+        function downloadJSON() {
+            const applicationData = {
+                pnr: state.pnr,
+                totalApplicants: state.totalApplicants,
+                applicants: state.applicants,
+                timestamp: new Date().toISOString()
+            };
+            
+            const dataStr = JSON.stringify(applicationData, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = `uk-visa-application-${state.pnr}.json`;
+            link.click();
         }
 
         // Save application to localStorage
@@ -932,27 +2074,57 @@
 
         // Submit the application
         function submitApplication() {
+            // Prepare data for API
+            const applicationData = {
+                pnr: state.pnr,
+                totalApplicants: state.totalApplicants,
+                applicants: state.applicants,
+                timestamp: new Date().toISOString()
+            };
+            
             // In a real application, this would send data to a server
-            alert(`Application with PNR ${state.pnr} submitted successfully!`);
+            console.log('Submitting application data:', applicationData);
             
-            // Clear localStorage
-            localStorage.removeItem('ukVisaApplication');
-            
-            // Reset the form (for demonstration purposes)
-            document.getElementById('initial-screen').classList.remove('hidden');
-            document.getElementById('multi-applicant-form').classList.add('hidden');
-            document.getElementById('saved-application-section').classList.add('hidden');
-            
-            // Reset state
-            state.currentApplicant = 0;
-            state.currentStep = 0;
-            state.totalApplicants = 1;
-            state.pnr = '';
-            state.applicants = [];
-            initializeApplicant(0);
-            
-            // Reset form
-            document.getElementById('applicant-count').value = '1';
+            // Example API call (replace with your actual API endpoint)
+            fetch('https://your-api-endpoint.com/submit-application', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(applicationData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                alert(`Application with PNR ${state.pnr} submitted successfully!`);
+                
+                // Clear localStorage
+                localStorage.removeItem('ukVisaApplication');
+                
+                // Reset the form
+                document.getElementById('initial-screen').classList.remove('hidden');
+                document.getElementById('multi-applicant-form').classList.add('hidden');
+                document.getElementById('saved-application-section').classList.add('hidden');
+                
+                // Reset state
+                state.currentApplicant = 0;
+                state.currentStep = 0;
+                state.totalApplicants = 1;
+                state.pnr = '';
+                state.applicants = [];
+                initializeApplicant(0);
+                
+                // Reset form
+                document.getElementById('applicant-count').value = '1';
+            })
+            .catch(error => {
+                console.error('Error submitting application:', error);
+                alert('There was an error submitting your application. Please try again.');
+            });
         }
     </script>
 </body>
