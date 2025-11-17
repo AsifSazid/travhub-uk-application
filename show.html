@@ -15,6 +15,7 @@
             margin: 0.125rem 0;
             border: 1px solid #e5e7eb;
             background-color: white;
+            font-family: inherit;
         }
         
         .copy-field:hover {
@@ -31,6 +32,13 @@
         .applicant-section {
             border-left: 4px solid #3b82f6;
             background-color: #f8fafc;
+            transition: all 0.3s ease;
+        }
+        
+        .applicant-section.highlighted {
+            border-left-color: #10b981;
+            background-color: #f0fdf4;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
         }
         
         .section-header {
@@ -78,6 +86,12 @@
             text-align: center;
             flex: 1;
             position: relative;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .step-item:hover {
+            transform: translateY(-2px);
         }
         
         .step-item:not(:last-child):after {
@@ -102,6 +116,8 @@
             margin: 0 auto 0.5rem;
             position: relative;
             z-index: 2;
+            font-size: 0.875rem;
+            transition: all 0.3s ease;
         }
         
         .step-icon.active {
@@ -109,14 +125,42 @@
             color: white;
         }
         
+        .step-icon.highlighted {
+            background-color: #10b981;
+            color: white;
+            transform: scale(1.1);
+        }
+        
         .step-label {
             font-size: 0.75rem;
             color: #6b7280;
+            transition: all 0.3s ease;
         }
         
         .step-label.active {
             color: #3b82f6;
             font-weight: 600;
+        }
+        
+        .step-label.highlighted {
+            color: #10b981;
+            font-weight: 700;
+        }
+        
+        .applicant-tab {
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .applicant-tab.active {
+            background-color: #3b82f6;
+            color: white;
+            border-bottom-color: #1d4ed8;
+        }
+        
+        .applicant-tab:hover:not(.active) {
+            background-color: #f3f4f6;
         }
     </style>
 </head>
@@ -159,6 +203,18 @@
 
     <script>
         let applicationData = null;
+        let currentApplicantIndex = 0;
+        const stepSections = [
+            'passport-info',
+            'nid-info', 
+            'contact-info',
+            'family-info',
+            'accommodation-info',
+            'employment-info',
+            'income-info',
+            'travel-info',
+            'travel-history'
+        ];
 
         // Initialize the page
         document.addEventListener('DOMContentLoaded', function() {
@@ -231,15 +287,56 @@
                 </div>
             `;
 
-            // Render each applicant
-            applicationData.applicants.forEach((applicant, index) => {
-                html += renderApplicant(applicant, index);
-            });
+            // Applicant Tabs for multiple applicants
+            if (applicationData.totalApplicants > 1) {
+                html += `
+                    <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                        <div class="border-b border-gray-200">
+                            <div class="flex overflow-x-auto" id="applicant-tabs">
+                                ${applicationData.applicants.map((applicant, index) => `
+                                    <div class="applicant-tab py-3 px-6 text-sm font-medium flex items-center min-w-40 ${
+                                        index === currentApplicantIndex ? 'active' : 'text-gray-500'
+                                    }" data-applicant="${index}">
+                                        <i class="fas fa-user mr-2 ${index === currentApplicantIndex ? 'text-white' : 'text-gray-400'}"></i>
+                                        Applicant ${index + 1}
+                                        ${applicant.completed ? 
+                                            `<i class="fas fa-check-circle ml-2 ${index === currentApplicantIndex ? 'text-white' : 'text-green-500'}"></i>` : 
+                                            ''
+                                        }
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Render current applicant
+            html += renderApplicant(applicationData.applicants[currentApplicantIndex], currentApplicantIndex);
 
             container.innerHTML = html;
             
+            // Add event listeners for tabs
+            if (applicationData.totalApplicants > 1) {
+                document.querySelectorAll('.applicant-tab').forEach(tab => {
+                    tab.addEventListener('click', function() {
+                        const applicantIndex = parseInt(this.getAttribute('data-applicant'));
+                        switchApplicant(applicantIndex);
+                    });
+                });
+            }
+            
             // Add copy functionality to all copy fields
             setupCopyFunctionality();
+            
+            // Add step click functionality
+            setupStepNavigation();
+        }
+
+        // Switch between applicants
+        function switchApplicant(applicantIndex) {
+            currentApplicantIndex = applicantIndex;
+            renderApplication();
         }
 
         // Render a single applicant
@@ -259,86 +356,98 @@
                     
                     <!-- Step Progress -->
                     <div class="step-progress">
-                        <div class="step-item">
+                        <div class="step-item" data-step="0">
                             <div class="step-icon active">
                                 <i class="fas fa-passport"></i>
                             </div>
                             <div class="step-label active">Passport</div>
                         </div>
-                        <div class="step-item">
+                        <div class="step-item" data-step="1">
                             <div class="step-icon active">
                                 <i class="fas fa-id-card"></i>
                             </div>
                             <div class="step-label active">NID</div>
                         </div>
-                        <div class="step-item">
+                        <div class="step-item" data-step="2">
                             <div class="step-icon active">
                                 <i class="fas fa-address-book"></i>
                             </div>
                             <div class="step-label active">Contact</div>
                         </div>
-                        <div class="step-item">
+                        <div class="step-item" data-step="3">
                             <div class="step-icon active">
                                 <i class="fas fa-users"></i>
                             </div>
                             <div class="step-label active">Family</div>
                         </div>
-                        <div class="step-item">
+                        <div class="step-item" data-step="4">
+                            <div class="step-icon active">
+                                <i class="fas fa-hotel"></i>
+                            </div>
+                            <div class="step-label active">Accommodation</div>
+                        </div>
+                        <div class="step-item" data-step="5">
                             <div class="step-icon active">
                                 <i class="fas fa-briefcase"></i>
                             </div>
                             <div class="step-label active">Employment</div>
                         </div>
-                        <div class="step-item">
+                        <div class="step-item" data-step="6">
                             <div class="step-icon active">
                                 <i class="fas fa-chart-line"></i>
                             </div>
                             <div class="step-label active">Income</div>
                         </div>
-                        <div class="step-item">
+                        <div class="step-item" data-step="7">
                             <div class="step-icon active">
                                 <i class="fas fa-plane"></i>
                             </div>
                             <div class="step-label active">Travel</div>
                         </div>
+                        <div class="step-item" data-step="8">
+                            <div class="step-icon active">
+                                <i class="fas fa-globe-americas"></i>
+                            </div>
+                            <div class="step-label active">Travel History</div>
+                        </div>
                     </div>
                     
                     <div class="p-6 space-y-6">
                         <!-- Passport Information -->
-                        <div class="applicant-section p-4 rounded-lg">
+                        <div id="passport-info" class="applicant-section p-4 rounded-lg">
                             <h4 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                                 <i class="fas fa-passport mr-2 text-blue-500"></i>
                                 Passport Information
                             </h4>
                             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                ${renderField('Given Name', applicant.passportInfo.pp_given_name)}
-                                ${renderField('Family Name', applicant.passportInfo.pp_family_name)}
-                                ${renderField('Gender', applicant.passportInfo.pp_gender)}
-                                ${renderField('Place of Birth', applicant.passportInfo.pp_pob)}
-                                ${renderField('Date of Birth', applicant.passportInfo.pp_dob)}
-                                ${renderField('Passport Number', applicant.passportInfo.pp_number)}
-                                ${renderField('Issuing Authority', applicant.passportInfo.pp_issuing_authority)}
-                                ${renderField('Issue Date', applicant.passportInfo.pp_issue_date)}
-                                ${renderField('Expiry Date', applicant.passportInfo.pp_expiry_date)}
+                                ${renderField('Given Name', applicant.passportInfo?.pp_given_name)}
+                                ${renderField('Family Name', applicant.passportInfo?.pp_family_name)}
+                                ${renderField('Gender', applicant.passportInfo?.pp_gender)}
+                                ${renderField('Place of Birth', applicant.passportInfo?.pp_pob)}
+                                ${renderField('Date of Birth', applicant.passportInfo?.pp_dob)}
+                                ${renderField('Passport Number', applicant.passportInfo?.pp_number)}
+                                ${renderField('Issuing Authority', applicant.passportInfo?.pp_issuing_authority)}
+                                ${renderField('Issue Date', applicant.passportInfo?.pp_issue_date)}
+                                ${renderField('Expiry Date', applicant.passportInfo?.pp_expiry_date)}
                             </div>
                         </div>
 
                         <!-- NID Information -->
-                        <div class="applicant-section p-4 rounded-lg">
+                        <div id="nid-info" class="applicant-section p-4 rounded-lg">
                             <h4 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                                 <i class="fas fa-id-card mr-2 text-green-500"></i>
                                 NID Information
                             </h4>
                             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                ${renderField('Has NID', applicant.nidInfo.has_nid !== null ? (applicant.nidInfo.has_nid ? 'Yes' : 'No') : 'Not provided')}
-                                ${applicant.nidInfo.has_nid ? renderField('NID Number', applicant.nidInfo.nid_number) : ''}
-                                ${applicant.nidInfo.has_nid ? renderField('Issuing Authority', applicant.nidInfo.nid_issuing_authority) : ''}
-                                ${applicant.nidInfo.has_nid && applicant.nidInfo.nid_isue_date ? renderField('Issue Date', applicant.nidInfo.nid_isue_date) : ''}
+                                ${renderField('Has NID', applicant.nidInfo?.has_nid !== null ? (applicant.nidInfo?.has_nid ? 'Yes' : 'No') : 'Not provided')}
+                                ${applicant.nidInfo?.has_nid ? renderField('NID Number', applicant.nidInfo?.nid_number) : ''}
+                                ${applicant.nidInfo?.has_nid ? renderField('Issuing Authority', applicant.nidInfo?.nid_issuing_authority) : ''}
+                                ${applicant.nidInfo?.has_nid && applicant.nidInfo?.nid_isue_date ? renderField('Issue Date', applicant.nidInfo?.nid_isue_date) : ''}
                             </div>
                         </div>
 
                         <!-- Contact Information -->
-                        <div class="applicant-section p-4 rounded-lg">
+                        <div id="contact-info" class="applicant-section p-4 rounded-lg">
                             <h4 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                                 <i class="fas fa-address-book mr-2 text-purple-500"></i>
                                 Contact Information
@@ -348,7 +457,7 @@
                                 <div>
                                     <h5 class="font-medium text-gray-700 mb-2">Email Addresses</h5>
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                        ${applicant.contactInfo.emails.filter(email => email).map(email => 
+                                        ${(applicant.contactInfo?.emails || []).filter(email => email).map(email => 
                                             renderField('Email', email)
                                         ).join('')}
                                     </div>
@@ -358,14 +467,14 @@
                                 <div>
                                     <h5 class="font-medium text-gray-700 mb-2">Phone Numbers</h5>
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                        ${applicant.contactInfo.phones.filter(phone => phone).map(phone => 
+                                        ${(applicant.contactInfo?.phones || []).filter(phone => phone).map(phone => 
                                             renderField('Phone', phone)
                                         ).join('')}
                                     </div>
                                 </div>
                                 
                                 <!-- Preferred Phone -->
-                                ${applicant.contactInfo.preferred_phone_no ? `
+                                ${applicant.contactInfo?.preferred_phone_no ? `
                                     <div class="grid grid-cols-1">
                                         ${renderField('Preferred Phone', applicant.contactInfo.preferred_phone_no)}
                                     </div>
@@ -375,7 +484,7 @@
                                 <div>
                                     <h5 class="font-medium text-gray-700 mb-2">Addresses</h5>
                                     <div class="space-y-3">
-                                        ${applicant.contactInfo.addresses.map((address, addrIndex) => `
+                                        ${(applicant.contactInfo?.addresses || []).map((address, addrIndex) => `
                                             <div class="border border-gray-200 rounded-lg p-3 bg-white">
                                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
                                                     ${renderField('Line 1', address.line1)}
@@ -395,17 +504,17 @@
                         </div>
 
                         <!-- Family Information -->
-                        <div class="applicant-section p-4 rounded-lg">
+                        <div id="family-info" class="applicant-section p-4 rounded-lg">
                             <h4 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                                 <i class="fas fa-users mr-2 text-pink-500"></i>
                                 Family Information
                             </h4>
                             <div class="space-y-4">
-                                ${renderField('Relationship Status', applicant.familyInfo.relationshipStatus)}
-                                ${renderField('Has Relative in UK', applicant.familyInfo.hasRelativeInUK !== null ? (applicant.familyInfo.hasRelativeInUK ? 'Yes' : 'No') : 'Not provided')}
+                                ${renderField('Relationship Status', applicant.familyInfo?.relationshipStatus)}
+                                ${renderField('Has Relative in UK', applicant.familyInfo?.hasRelativeInUK !== null ? (applicant.familyInfo?.hasRelativeInUK ? 'Yes' : 'No') : 'Not provided')}
                                 
                                 <!-- Family Members -->
-                                ${applicant.familyInfo.familyMembers.length > 0 ? `
+                                ${applicant.familyInfo?.familyMembers && applicant.familyInfo.familyMembers.length > 0 ? `
                                     <div>
                                         <h5 class="font-medium text-gray-700 mb-2">Family Members</h5>
                                         <div class="space-y-3">
@@ -429,37 +538,67 @@
                             </div>
                         </div>
 
+                        <!-- Accommodation Details -->
+                        <div id="accommodation-info" class="applicant-section p-4 rounded-lg">
+                            <h4 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                                <i class="fas fa-hotel mr-2 text-yellow-500"></i>
+                                Accommodation Details
+                            </h4>
+                            <div class="space-y-4">
+                                ${renderField('Has UK Address', applicant.accommodationDetails?.hasAddress !== null ? (applicant.accommodationDetails?.hasAddress ? 'Yes' : 'No') : 'Not provided')}
+                                
+                                <!-- Accommodation Addresses -->
+                                <div>
+                                    <h5 class="font-medium text-gray-700 mb-2">Accommodation Addresses</h5>
+                                    <div class="space-y-3">
+                                        ${(applicant.accommodationDetails?.addresses || []).map((address, addrIndex) => `
+                                            <div class="border border-gray-200 rounded-lg p-3 bg-white">
+                                                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                                    ${renderField('Hotel Name', applicant.accommodationDetails?.hotels?.[addrIndex])}
+                                                    ${renderField('Line 1', address.line1)}
+                                                    ${renderField('Line 2', address.line2)}
+                                                    ${renderField('City', address.city)}
+                                                    ${renderField('State', address.state)}
+                                                    ${renderField('Postal Code', address.postalCode)}
+                                                </div>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Employment Information -->
-                        <div class="applicant-section p-4 rounded-lg">
+                        <div id="employment-info" class="applicant-section p-4 rounded-lg">
                             <h4 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                                 <i class="fas fa-briefcase mr-2 text-orange-500"></i>
                                 Employment Information
                             </h4>
                             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                ${renderField('Employment Status', applicant.employmentInfo.employmentStatus)}
-                                ${applicant.employmentInfo.employmentStatus === 'self-employed' ? renderField('Job Details', applicant.employmentInfo.jobDetails) : ''}
-                                ${applicant.employmentInfo.employmentStatus === 'self-employed' ? renderField('Yearly Earning', applicant.employmentInfo.yearlyEarning) : ''}
-                                ${applicant.employmentInfo.employmentStatus === 'employed' ? renderField('Job Title', applicant.employmentInfo.jobTitle) : ''}
-                                ${applicant.employmentInfo.employmentStatus === 'employed' ? renderField('Monthly Income', applicant.employmentInfo.monthlyIncome) : ''}
-                                ${applicant.employmentInfo.jobDescription ? renderField('Job Description', applicant.employmentInfo.jobDescription) : ''}
+                                ${renderField('Employment Status', applicant.employmentInfo?.employmentStatus)}
+                                ${applicant.employmentInfo?.employmentStatus === 'self-employed' ? renderField('Job Details', applicant.employmentInfo?.jobDetails) : ''}
+                                ${applicant.employmentInfo?.employmentStatus === 'self-employed' ? renderField('Yearly Earning', applicant.employmentInfo?.yearlyEarning) : ''}
+                                ${applicant.employmentInfo?.employmentStatus === 'employed' ? renderField('Job Title', applicant.employmentInfo?.jobTitle) : ''}
+                                ${applicant.employmentInfo?.employmentStatus === 'employed' ? renderField('Monthly Income', applicant.employmentInfo?.monthlyIncome) : ''}
+                                ${applicant.employmentInfo?.jobDescription ? renderField('Job Description', applicant.employmentInfo?.jobDescription) : ''}
                             </div>
                         </div>
 
                         <!-- Income & Expenditure -->
-                        <div class="applicant-section p-4 rounded-lg">
+                        <div id="income-info" class="applicant-section p-4 rounded-lg">
                             <h4 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                                 <i class="fas fa-chart-line mr-2 text-indigo-500"></i>
                                 Income & Expenditure
                             </h4>
                             <div class="space-y-4">
                                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    ${renderField('Has Savings', applicant.incomeExpenditure.haveSavings !== null ? (applicant.incomeExpenditure.haveSavings ? 'Yes' : 'No') : 'Not provided')}
-                                    ${renderField('Planning to Expense', applicant.incomeExpenditure.planningToExpense)}
-                                    ${renderField('Total Monthly Expense', applicant.incomeExpenditure.totalExpenseInBd)}
+                                    ${renderField('Has Savings', applicant.incomeExpenditure?.haveSavings !== null ? (applicant.incomeExpenditure?.haveSavings ? 'Yes' : 'No') : 'Not provided')}
+                                    ${renderField('Planning to Expense', applicant.incomeExpenditure?.planningToExpense)}
+                                    ${renderField('Total Monthly Expense', applicant.incomeExpenditure?.totalExpenseInBd)}
                                 </div>
                                 
                                 <!-- Payment Information -->
-                                ${applicant.incomeExpenditure.paymentInfo.some(p => p.currency || p.amount || p.paidFor) ? `
+                                ${applicant.incomeExpenditure?.paymentInfo && applicant.incomeExpenditure.paymentInfo.some(p => p.currency || p.amount || p.paidFor) ? `
                                     <div>
                                         <h5 class="font-medium text-gray-700 mb-2">Payment Information</h5>
                                         <div class="space-y-3">
@@ -481,18 +620,29 @@
                         </div>
 
                         <!-- Travel Information -->
-                        <div class="applicant-section p-4 rounded-lg">
+                        <div id="travel-info" class="applicant-section p-4 rounded-lg">
                             <h4 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                                 <i class="fas fa-plane mr-2 text-teal-500"></i>
                                 Travel Information
                             </h4>
                             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                ${renderField('Visit Reason', applicant.travelInfo.visitMainReason)}
-                                ${applicant.travelInfo.businessReasonToVisitUk ? renderField('Business Reason', applicant.travelInfo.businessReasonToVisitUk) : ''}
-                                ${applicant.travelInfo.tourismReasonToVisitUk ? renderField('Tourism Reason', applicant.travelInfo.tourismReasonToVisitUk) : ''}
-                                ${renderField('Activities', applicant.travelInfo.activities)}
-                                ${renderField('Arrival Date', applicant.travelInfo.arrivalDate)}
-                                ${renderField('Departure Date', applicant.travelInfo.leaveDate)}
+                                ${renderField('Visit Reason', applicant.travelInfo?.visitMainReason)}
+                                ${applicant.travelInfo?.businessReasonToVisitUk ? renderField('Business Reason', applicant.travelInfo?.businessReasonToVisitUk) : ''}
+                                ${applicant.travelInfo?.tourismReasonToVisitUk ? renderField('Tourism Reason', applicant.travelInfo?.tourismReasonToVisitUk) : ''}
+                                ${renderField('Activities', applicant.travelInfo?.activities)}
+                                ${renderField('Arrival Date', applicant.travelInfo?.arrivalDate)}
+                                ${renderField('Departure Date', applicant.travelInfo?.leaveDate)}
+                            </div>
+                        </div>
+
+                        <!-- Travel History -->
+                        <div id="travel-history" class="applicant-section p-4 rounded-lg">
+                            <h4 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                                <i class="fas fa-globe-americas mr-2 text-red-500"></i>
+                                Travel History
+                            </h4>
+                            <div class="grid grid-cols-1">
+                                ${renderField('Travel History', applicant.travelHistory?.history || 'Not provided', true)}
                             </div>
                         </div>
                     </div>
@@ -545,18 +695,67 @@
             });
         }
 
-        // Copy text to clipboard - FIXED VERSION
+        // Setup step navigation
+        function setupStepNavigation() {
+            const stepItems = document.querySelectorAll('.step-item');
+            
+            stepItems.forEach((step, index) => {
+                step.addEventListener('click', function() {
+                    const stepIndex = parseInt(this.getAttribute('data-step'));
+                    highlightStepSection(stepIndex);
+                });
+            });
+        }
+
+        // Highlight step section
+        function highlightStepSection(stepIndex) {
+            // Remove all highlights
+            document.querySelectorAll('.applicant-section').forEach(section => {
+                section.classList.remove('highlighted');
+            });
+            
+            document.querySelectorAll('.step-icon').forEach(icon => {
+                icon.classList.remove('highlighted');
+            });
+            
+            document.querySelectorAll('.step-label').forEach(label => {
+                label.classList.remove('highlighted');
+            });
+            
+            // Add highlight to selected step
+            const stepElement = document.querySelector(`.step-item[data-step="${stepIndex}"]`);
+            if (stepElement) {
+                stepElement.querySelector('.step-icon').classList.add('highlighted');
+                stepElement.querySelector('.step-label').classList.add('highlighted');
+            }
+            
+            // Highlight corresponding section
+            const sectionId = stepSections[stepIndex];
+            const sectionElement = document.getElementById(sectionId);
+            if (sectionElement) {
+                sectionElement.classList.add('highlighted');
+                
+                // Scroll to section
+                sectionElement.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center' 
+                });
+            }
+        }
+
+        // Copy text to clipboard - GUARANTEED WORKING VERSION
         function copyToClipboard(text, element) {
             // Create a temporary textarea element
             const textarea = document.createElement('textarea');
             textarea.value = text;
             textarea.style.position = 'fixed';
-            textarea.style.opacity = '0';
+            textarea.style.left = '-999999px';
+            textarea.style.top = '-999999px';
             document.body.appendChild(textarea);
             
             // Select and copy the text
+            textarea.focus();
             textarea.select();
-            textarea.setSelectionRange(0, 99999); // For mobile devices
             
             try {
                 const successful = document.execCommand('copy');
