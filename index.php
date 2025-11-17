@@ -1,10 +1,8 @@
 <?php
 // header("Content-Type: application/json");
+require 'server/db_connection.php'; // your PDO connection
 
 try {
-    $pdo = new PDO("mysql:host=localhost;dbname=travhub-uk-apply", "root", "");
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
     // Optional: load a specific PNR or all applications
     $pnr = isset($_GET['pnr']) ? $_GET['pnr'] : null;
 
