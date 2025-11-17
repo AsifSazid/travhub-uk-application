@@ -203,21 +203,29 @@
         // Load all applications from localStorage
         function loadApplications() {
             applications = [];
-            
-            // Get the main application from localStorage
-            const mainApp = localStorage.getItem('ukVisaApplication');
-            if (mainApp) {
-                try {
-                    const appData = JSON.parse(mainApp);
-                    applications.push(appData);
-                } catch (e) {
-                    console.error('Error parsing application data:', e);
+
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+
+                if (key.startsWith("ukVisaApplication-")) {
+                    try {
+                        const appData = JSON.parse(localStorage.getItem(key));
+                        if (appData) applications.push(appData);
+                    } catch (e) {
+                        console.error("Error parsing:", key, e);
+                    }
                 }
             }
-            
+
+            // Sort by latest update
+            applications.sort((a, b) => {
+                return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+            });
+
             renderApplications();
             updateStats();
         }
+
 
         // Render the applications list
         function renderApplications() {

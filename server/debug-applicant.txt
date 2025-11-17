@@ -1,0 +1,131 @@
+Array
+(
+    [id] => TRH-UK-PNR-739162K655-APPT-002
+    [pnr] => TRH-UK-PNR-739162K655
+    [user_pnr] => TRH-UK-PNR-739162K655-APPT-002
+    [completed] => 1
+    [passportInfo] => Array
+        (
+        )
+
+    [nidInfo] => Array
+        (
+            [has_nid] => 
+        )
+
+    [contactInfo] => Array
+        (
+            [emails] => Array
+                (
+                    [0] => 
+                )
+
+            [phones] => Array
+                (
+                    [0] => 
+                )
+
+            [addresses] => Array
+                (
+                    [0] => Array
+                        (
+                            [line1] => 
+                            [line2] => 
+                            [city] => 
+                            [state] => 
+                            [postalCode] => 
+                            [isCorrespondence] => 
+                            [livedInFor] => 
+                            [ownershipStatus] => 
+                        )
+
+                )
+
+            [preferred_phone_no] => 
+        )
+
+    [familyInfo] => Array
+        (
+            [relationshipStatus] => 
+            [familyMembers] => Array
+                (
+                )
+
+            [hasRelativeInUK] => 
+            [relativeAddress] => Array
+                (
+                    [line1] => 
+                    [line2] => 
+                    [city] => 
+                    [state] => 
+                    [postalCode] => 
+                )
+
+        )
+
+    [accommodationDetails] => Array
+        (
+            [hasAddress] => 
+            [hotels] => Array
+                (
+                    [0] => 
+                )
+
+            [addresses] => Array
+                (
+                    [0] => Array
+                        (
+                            [line1] => 
+                            [line2] => 
+                            [city] => 
+                            [state] => 
+                            [postalCode] => 
+                        )
+
+                )
+
+        )
+
+    [employmentInfo] => Array
+        (
+            [employmentStatus] => 
+            [jobDetails] => 
+            [yearlyEarning] => 
+            [jobTitle] => 
+            [monthlyIncome] => 
+            [jobDescription] => 
+        )
+
+    [incomeExpenditure] => Array
+        (
+            [haveSavings] => 
+            [planningToExpense] => 
+            [totalExpenseInBd] => 
+            [paymentInfo] => Array
+                (
+                    [0] => Array
+                        (
+                            [currency] => 
+                            [amount] => 
+                            [paidFor] => 
+                        )
+
+                )
+
+        )
+
+    [travelInfo] => Array
+        (
+            [visitMainReason] => 
+            [businessReasonToVisitUk] => 
+            [tourismReasonToVisitUk] => 
+            [activities] => 
+            [arrivalDate] => 
+            [leaveDate] => 
+        )
+
+    [travelHistory] => Array
+        (
+        )
+
+)

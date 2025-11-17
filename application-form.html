@@ -235,10 +235,10 @@
                     </button>
                     <div class="flex space-x-4">
                         <button id="next-applicant-btn" class="hidden bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-6 rounded-lg transition duration-300 flex items-center">
-                            Next Applicant <i class="fas fa-user-plus ml-2"></i>
+                            Save & Next Applicant <i class="fas fa-user-plus ml-2"></i>
                         </button>
                         <button id="next-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition duration-300 flex items-center">
-                            Next Step <i class="fas fa-arrow-right ml-2"></i>
+                            Save & Next Step <i class="fas fa-arrow-right ml-2"></i>
                         </button>
                     </div>
                     <button id="submit-btn" class="hidden bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-lg transition duration-300">
@@ -326,7 +326,7 @@
 
         // Load specific application by PNR
         function loadApplicationByPNR(pnr) {
-            const savedApplication = localStorage.getItem('ukVisaApplication');
+            const savedApplication = localStorage.getItem('ukVisaApplication-'+pnr);
             
             if (savedApplication) {
                 const applicationData = JSON.parse(savedApplication);
@@ -390,22 +390,63 @@
                 // Try to load the application from URL parameter
                 if (!loadApplicationByPNR(pnr)) {
                     // If not found, check for regular saved application
-                    checkForSavedApplication();
+                    checkForSavedApplication(pnr);
                 }
             } else {
                 // Check for regular saved application
-                checkForSavedApplication();
+                checkForSavedApplication(pnr);
             }
 
         });
 
         // Check if there's a saved application in localStorage
-        function checkForSavedApplication() {
-            const savedApplication = localStorage.getItem('ukVisaApplication');
+        function checkForSavedApplication(pnr) {
+            const savedApplication = localStorage.getItem('ukVisaApplication-'+pnr);
             if (savedApplication) {
                 const applicationData = JSON.parse(savedApplication);
                 document.getElementById('saved-pnr').textContent = applicationData.pnr;
                 document.getElementById('saved-application-section').classList.remove('hidden');
+            }
+
+            
+            // ---------------------------------------------------------
+            // CASE 2: No PNR match → Find LAST SAVED Application
+            // ---------------------------------------------------------
+            let lastApplication = null;
+            let latestTimestamp = 0;
+
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+
+                
+                if (key.startsWith('ukVisaApplication-')) {
+                    try {
+                        const storedValue = JSON.parse(localStorage.getItem(key));
+                        
+                        // Make sure object has timestamp
+                        if (storedValue && storedValue.timestamp) {
+
+                            const ts = new Date(storedValue.timestamp).getTime(); // convert string → number
+
+                            if (ts > latestTimestamp) {
+                                latestTimestamp = ts;
+                                lastApplication = storedValue;
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Error parsing localStorage item:', key, e);
+                    }
+                }
+            }
+
+            // ---------------------------------------------------------
+            // Load last application if exists
+            // ---------------------------------------------------------
+            if (lastApplication) {
+                document.getElementById('saved-pnr').textContent = lastApplication.pnr;
+                document.getElementById('saved-application-section').classList.remove('hidden');
+            } else {
+                console.log('No UK Visa Application found.');
             }
         }
 
@@ -448,38 +489,45 @@
 
         // Load saved application
         function loadSavedApplication() {
-            const savedApplication = localStorage.getItem('ukVisaApplication');
-            if (savedApplication) {
-                const applicationData = JSON.parse(savedApplication);
-                
-                // Restore state from saved data
-                state.totalApplicants = applicationData.totalApplicants;
-                state.pnr = applicationData.pnr;
-                state.applicants = applicationData.applicants;
-                state.currentApplicant = applicationData.currentApplicant || 0;
-                state.currentStep = applicationData.currentStep || 0;
-                
-                // Hide initial screen and show form
-                document.getElementById('initial-screen').classList.add('hidden');
-                document.getElementById('multi-applicant-form').classList.remove('hidden');
-                
-                // Display PNR
-                document.getElementById('pnr-display').textContent = state.pnr;
-                document.getElementById('total-applicants').textContent = state.totalApplicants;
-                
-                // Generate tabs
-                generateTabs();
-                
-                // Generate step navigation
-                generateStepNavigation();
-                
-                // Generate form steps for the current applicant
-                generateFormSteps();
-                
-                // Update UI
-                updateUI();
+            // 1. Get the PNR shown in UI
+            const pnr = document.getElementById('saved-pnr').textContent.trim();
+            if (!pnr) {
+                console.error("No PNR found.");
+                return;
             }
+
+            // 2. Load the correct key
+            const savedApplication = localStorage.getItem('ukVisaApplication-' + pnr);
+            if (!savedApplication) {
+                console.error("No saved application found for PNR:", pnr);
+                return;
+            }
+
+            // 3. Parse it
+            const applicationData = JSON.parse(savedApplication);
+
+            // 4. Restore state
+            state.totalApplicants = applicationData.totalApplicants;
+            state.pnr = applicationData.pnr;
+            state.applicants = applicationData.applicants;
+            state.currentApplicant = applicationData.currentApplicant || 0;
+            state.currentStep = applicationData.currentStep || 0;
+
+            // 5. Show UI
+            document.getElementById('initial-screen').classList.add('hidden');
+            document.getElementById('multi-applicant-form').classList.remove('hidden');
+
+            // 6. Display PNR
+            document.getElementById('pnr-display').textContent = state.pnr;
+            document.getElementById('total-applicants').textContent = state.totalApplicants;
+
+            // 7. Rebuild UI
+            generateTabs();
+            generateStepNavigation();
+            generateFormSteps();
+            updateUI();
         }
+
 
         // Generate a unique PNR
         function generatePNR() {
@@ -497,6 +545,8 @@
         function initializeApplicant(index) {
             state.applicants[index] = {
                 id: generateApplicantId(index),
+                pnr: state.pnr,
+                user_pnr: generateApplicantId(index),
                 completed: false,
                 passportInfo: {},
                 nidInfo: {
@@ -2154,7 +2204,7 @@
                 timestamp: new Date().toISOString()
             };
             
-            localStorage.setItem('ukVisaApplication', JSON.stringify(applicationData));
+            localStorage.setItem('ukVisaApplication-'+state.pnr, JSON.stringify(applicationData));
         }
 
         // Save and exit the application
@@ -2166,11 +2216,15 @@
 
         // Submit the application
         function submitApplication() {
+            console.log(state.applicants[0].passportInfo.pp_family_name);
+            
             // Prepare data for API
             const applicationData = {
                 pnr: state.pnr,
+                nameOfApplicant: state.applicants[0].passportInfo.pp_family_name,
                 totalApplicants: state.totalApplicants,
                 applicants: state.applicants,
+                status: "completed",
                 timestamp: new Date().toISOString()
             };
             

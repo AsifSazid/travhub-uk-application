@@ -4,10 +4,7 @@ header("Access-Control-Allow-Methods: POST");
 header("Access-Control-Allow-Headers: Content-Type");
 header("Content-Type: application/json");
 
-// Get raw JSON
 $input = file_get_contents("php://input");
-
-// Convert to associative array
 $data = json_decode($input, true);
 
 if (!$data) {
@@ -15,12 +12,74 @@ if (!$data) {
     exit;
 }
 
-// Example: save JSON to a file
-file_put_contents("applications.json", json_encode($data, JSON_PRETTY_PRINT));
+try {
+    $pdo = new PDO("mysql:host=localhost;dbname=travhub-uk-apply", "root", "");
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-// Return response
-echo json_encode([
-    "status" => "success",
-    "message" => "Application received",
-    "pnr" => $data["pnr"]
-]);
+    // Insert applications table
+    $stmt = $pdo->prepare("INSERT INTO applications (pnr, name_of_applicant, total_applicants, status, timestamp) VALUES (?, ?, ?, ?, ?)");
+    $stmt->execute([
+        $data['pnr'],
+        $data['nameOfApplicant'],
+        $data['totalApplicants'],
+        $data['status'],
+        date('Y-m-d H:i:s', strtotime($data['timestamp']))
+    ]);
+
+    // Insert applicants
+    foreach ($data['applicants'] as $applicant) {
+
+        // Debug dump (optional)
+        file_put_contents("debug-applicant.txt", print_r($applicant, true));
+
+        // Convert arrays to JSON (safe handling)
+        $passport_info         = json_encode($applicant['passportInfo'] ?? []);
+        $nid_info              = json_encode($applicant['nidInfo'] ?? []);
+        $contact_info          = json_encode($applicant['contactInfo'] ?? []);
+        $family_info           = json_encode($applicant['familyInfo'] ?? []);
+        $accommodation_details = json_encode($applicant['accommodationDetails'] ?? []);
+        $employment_info       = json_encode($applicant['employmentInfo'] ?? []);
+        $income_expenditure    = json_encode($applicant['incomeExpenditure'] ?? []);
+        $travel_info           = json_encode($applicant['travelInfo'] ?? []);
+        $travel_history        = json_encode($applicant['travelHistory'] ?? []);
+
+        // Prepare insert
+        $stmt = $pdo->prepare("
+        INSERT INTO applicants (
+            pnr,
+            user_pnr,
+            completed,
+            passport_info,
+            nid_info,
+            contact_info,
+            family_info,
+            accommodation_details,
+            employment_info,
+            income_expenditure,
+            travel_info,
+            travel_history
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ");
+
+        // Execute insert
+        $stmt->execute([
+            $applicant['pnr'] ?? null,
+            $applicant['user_pnr'] ?? null,
+            ($applicant['completed'] ?? false) ? 1 : 0,
+            $passport_info,
+            $nid_info,
+            $contact_info,
+            $family_info,
+            $accommodation_details,
+            $employment_info,
+            $income_expenditure,
+            $travel_info,
+            $travel_history
+        ]);
+    }
+
+
+    echo json_encode(["status" => "success", "message" => "Data saved successfully"]);
+} catch (Exception $e) {
+    echo json_encode(["status" => "error", "message" => $e->getMessage()]);
+}
