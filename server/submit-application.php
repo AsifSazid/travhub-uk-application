@@ -12,9 +12,9 @@ if (!$data) {
     exit;
 }
 
+require 'db_connection.php'; // your PDO connection
+
 try {
-    $pdo = new PDO("mysql:host=localhost;dbname=travhub-uk-apply", "root", "");
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
     // Insert applications table
     $stmt = $pdo->prepare("INSERT INTO applications (pnr, name_of_applicant, total_applicants, status, timestamp) VALUES (?, ?, ?, ?, ?)");
