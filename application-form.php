@@ -1,3 +1,55 @@
+<?php
+require 'server/db_connection.php';
+
+$pnr = $_GET['pnr'] ?? null;
+$dbApplicationData = null;
+
+if ($pnr) {
+    // 1. Fetch application info from DATABASE FIRST
+    $stmt = $pdo->prepare("SELECT * FROM applications WHERE pnr = ?");
+    $stmt->execute([$pnr]);
+    $application = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($application) {
+        // 2. Fetch all applicants from DATABASE
+        $stmt2 = $pdo->prepare("SELECT * FROM applicants WHERE pnr = ?");
+        $stmt2->execute([$pnr]);
+        $appRows = $stmt2->fetchAll(PDO::FETCH_ASSOC);
+
+        $applicants = [];
+        foreach ($appRows as $ap) {
+            $applicants[] = [
+                "id" => $ap['user_pnr'],
+                "pnr" => $ap['pnr'],
+                "user_pnr" => $ap['user_pnr'],
+                "completed" => (bool)$ap['completed'],
+                "passportInfo" => json_decode($ap['passport_info'], true) ?? [],
+                "nidInfo" => json_decode($ap['nid_info'], true) ?? [],
+                "contactInfo" => json_decode($ap['contact_info'], true) ?? [],
+                "familyInfo" => json_decode($ap['family_info'], true) ?? [],
+                "accommodationDetails" => json_decode($ap['accommodation_details'], true) ?? [],
+                "employmentInfo" => json_decode($ap['employment_info'], true) ?? [],
+                "incomeExpenditure" => json_decode($ap['income_expenditure'], true) ?? [],
+                "travelInfo" => json_decode($ap['travel_info'], true) ?? [],
+                "travelHistory" => json_decode($ap['travel_history'], true) ?? []
+            ];
+        }
+
+        // 3. Prepare DB data for JS
+        $dbApplicationData = [
+            'pnr' => $application['pnr'],
+            'nameOfApplicant' => $applicants[0]['passportInfo']['pp_family_name'] ?? '',
+            'totalApplicants' => count($applicants),
+            'applicants' => $applicants,
+            'currentApplicant' => 0,
+            'currentStep' => 0,
+            'timestamp' => $application['created_at'],
+            'source' => 'database'
+        ];
+    }
+}
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,6 +59,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        /* আপনার existing CSS styles এখানে রাখুন */
         .fade-in {
             animation: fadeIn 0.5s ease-in-out;
         }
@@ -313,18 +366,68 @@
             ]
         };
 
-        // Check for URL parameters on page load
+        // Check for URL parameters on page load - MODIFIED VERSION
         function checkURLParameters() {
             const urlParams = new URLSearchParams(window.location.search);
             const pnr = urlParams.get('pnr');
             
             if (pnr) {
-                // Load the specific application from localStorage
-                loadApplicationByPNR(pnr);
+                // FIRST: Try to load from DATABASE (if PHP found data)
+                <?php if ($dbApplicationData): ?>
+                    const dbApplicationData = <?php echo json_encode($dbApplicationData); ?>;
+                    if (loadApplicationFromDB(dbApplicationData)) {
+                        console.log('Application loaded from DATABASE');
+                        return;
+                    }
+                <?php endif; ?>
+
+                // SECOND: If no DB data, try localStorage
+                if (loadApplicationByPNR(pnr)) {
+                    console.log('Application loaded from LOCALSTORAGE');
+                    return;
+                }
+
+                // THIRD: If nothing found, show error
+                alert(`Application with PNR ${pnr} not found in Database or LocalStorage. Starting a new application.`);
             }
         }
 
-        // Load specific application by PNR
+        // Load application from DB data
+        function loadApplicationFromDB(applicationData) {
+            if (applicationData && applicationData.pnr) {
+                // Restore state from DB data
+                state.totalApplicants = applicationData.totalApplicants;
+                state.pnr = applicationData.pnr;
+                state.applicants = applicationData.applicants;
+                state.currentApplicant = applicationData.currentApplicant || 0;
+                state.currentStep = applicationData.currentStep || 0;
+                
+                // Hide initial screen and show form directly
+                document.getElementById('initial-screen').classList.add('hidden');
+                document.getElementById('multi-applicant-form').classList.remove('hidden');
+                
+                // Display PNR
+                document.getElementById('pnr-display').textContent = state.pnr;
+                document.getElementById('total-applicants').textContent = state.totalApplicants;
+                
+                // Generate tabs
+                generateTabs();
+                
+                // Generate step navigation
+                generateStepNavigation();
+                
+                // Generate form steps for the current applicant
+                generateFormSteps();
+                
+                // Update UI
+                updateUI();
+                
+                return true;
+            }
+            return false;
+        }
+
+        // Load specific application by PNR (for localStorage)
         function loadApplicationByPNR(pnr) {
             const savedApplication = localStorage.getItem('ukVisaApplication-'+pnr);
             
@@ -363,61 +466,19 @@
                 }
             }
             
-            // If application not found, show error and redirect to initial screen
-            alert(`Application with PNR ${pnr} not found. Starting a new application.`);
             return false;
         }
 
-        // Initialize the application
-        document.addEventListener('DOMContentLoaded', function() {
-            // Set up event listeners
-            document.getElementById('start-application').addEventListener('click', startApplication);
-            document.getElementById('load-application').addEventListener('click', loadSavedApplication);
-            document.getElementById('prev-btn').addEventListener('click', previousStep);
-            document.getElementById('next-btn').addEventListener('click', nextStep);
-            document.getElementById('next-applicant-btn').addEventListener('click', nextApplicant);
-            document.getElementById('submit-btn').addEventListener('click', submitApplication);
-            document.getElementById('save-exit').addEventListener('click', saveAndExit);
-            document.getElementById('back-to-dashboard').addEventListener('click', function() {
-                window.location.href = 'index.html'; // আপনার dashboard page name
-            });
-            
-            // Check for URL parameters first
-            const urlParams = new URLSearchParams(window.location.search);
-            const pnr = urlParams.get('pnr');
-            
-            if (pnr) {
-                // Try to load the application from URL parameter
-                if (!loadApplicationByPNR(pnr)) {
-                    // If not found, check for regular saved application
-                    checkForSavedApplication(pnr);
-                }
-            } else {
-                // Check for regular saved application
-                checkForSavedApplication(pnr);
-            }
-
-        });
-
         // Check if there's a saved application in localStorage
-        function checkForSavedApplication(pnr) {
-            const savedApplication = localStorage.getItem('ukVisaApplication-'+pnr);
-            if (savedApplication) {
-                const applicationData = JSON.parse(savedApplication);
-                document.getElementById('saved-pnr').textContent = applicationData.pnr;
-                document.getElementById('saved-application-section').classList.remove('hidden');
-            }
-
-            
+        function checkForSavedApplication() {
             // ---------------------------------------------------------
-            // CASE 2: No PNR match → Find LAST SAVED Application
+            // Find LAST SAVED Application from localStorage
             // ---------------------------------------------------------
             let lastApplication = null;
             let latestTimestamp = 0;
 
             for (let i = 0; i < localStorage.length; i++) {
                 const key = localStorage.key(i);
-
                 
                 if (key.startsWith('ukVisaApplication-')) {
                     try {
@@ -425,9 +486,8 @@
                         
                         // Make sure object has timestamp
                         if (storedValue && storedValue.timestamp) {
-
-                            const ts = new Date(storedValue.timestamp).getTime(); // convert string → number
-
+                            const ts = new Date(storedValue.timestamp).getTime();
+                            
                             if (ts > latestTimestamp) {
                                 latestTimestamp = ts;
                                 lastApplication = storedValue;
@@ -448,6 +508,68 @@
             } else {
                 console.log('No UK Visa Application found.');
             }
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set up event listeners
+            document.getElementById('start-application').addEventListener('click', startApplication);
+            document.getElementById('load-application').addEventListener('click', loadSavedApplication);
+            document.getElementById('prev-btn').addEventListener('click', previousStep);
+            document.getElementById('next-btn').addEventListener('click', nextStep);
+            document.getElementById('next-applicant-btn').addEventListener('click', nextApplicant);
+            document.getElementById('submit-btn').addEventListener('click', submitApplication);
+            document.getElementById('save-exit').addEventListener('click', saveAndExit);
+            document.getElementById('back-to-dashboard').addEventListener('click', function() {
+                window.location.href = 'index.php';
+            });
+            
+            // Check for URL parameters first - WITH DB PRIORITY
+            checkURLParameters();
+            
+            // Check for saved applications in localStorage (for initial screen)
+            checkForSavedApplication();
+        });
+
+        // Load saved application from localStorage
+        function loadSavedApplication() {
+            // 1. Get the PNR shown in UI
+            const pnr = document.getElementById('saved-pnr').textContent.trim();
+            if (!pnr) {
+                console.error("No PNR found.");
+                return;
+            }
+
+            // 2. Load from localStorage
+            const savedApplication = localStorage.getItem('ukVisaApplication-' + pnr);
+            if (!savedApplication) {
+                console.error("No saved application found for PNR:", pnr);
+                return;
+            }
+
+            // 3. Parse it
+            const applicationData = JSON.parse(savedApplication);
+
+            // 4. Restore state
+            state.totalApplicants = applicationData.totalApplicants;
+            state.pnr = applicationData.pnr;
+            state.applicants = applicationData.applicants;
+            state.currentApplicant = applicationData.currentApplicant || 0;
+            state.currentStep = applicationData.currentStep || 0;
+
+            // 5. Show UI
+            document.getElementById('initial-screen').classList.add('hidden');
+            document.getElementById('multi-applicant-form').classList.remove('hidden');
+
+            // 6. Display PNR
+            document.getElementById('pnr-display').textContent = state.pnr;
+            document.getElementById('total-applicants').textContent = state.totalApplicants;
+
+            // 7. Rebuild UI
+            generateTabs();
+            generateStepNavigation();
+            generateFormSteps();
+            updateUI();
         }
 
         // Start the application process
@@ -486,48 +608,6 @@
             // Save initial state
             saveToLocalStorage();
         }
-
-        // Load saved application
-        function loadSavedApplication() {
-            // 1. Get the PNR shown in UI
-            const pnr = document.getElementById('saved-pnr').textContent.trim();
-            if (!pnr) {
-                console.error("No PNR found.");
-                return;
-            }
-
-            // 2. Load the correct key
-            const savedApplication = localStorage.getItem('ukVisaApplication-' + pnr);
-            if (!savedApplication) {
-                console.error("No saved application found for PNR:", pnr);
-                return;
-            }
-
-            // 3. Parse it
-            const applicationData = JSON.parse(savedApplication);
-
-            // 4. Restore state
-            state.totalApplicants = applicationData.totalApplicants;
-            state.pnr = applicationData.pnr;
-            state.applicants = applicationData.applicants;
-            state.currentApplicant = applicationData.currentApplicant || 0;
-            state.currentStep = applicationData.currentStep || 0;
-
-            // 5. Show UI
-            document.getElementById('initial-screen').classList.add('hidden');
-            document.getElementById('multi-applicant-form').classList.remove('hidden');
-
-            // 6. Display PNR
-            document.getElementById('pnr-display').textContent = state.pnr;
-            document.getElementById('total-applicants').textContent = state.totalApplicants;
-
-            // 7. Rebuild UI
-            generateTabs();
-            generateStepNavigation();
-            generateFormSteps();
-            updateUI();
-        }
-
 
         // Generate a unique PNR
         function generatePNR() {
@@ -1978,7 +2058,7 @@
                 document.getElementById('submit-btn').classList.add('hidden');
                 document.getElementById('next-btn').classList.remove('hidden');
                 document.getElementById('next-applicant-btn').classList.add('hidden');
-            }else {
+            } else {
                 document.getElementById('submit-btn').classList.add('hidden');
                 document.getElementById('next-btn').classList.remove('hidden');
                 document.getElementById('next-applicant-btn').classList.add('hidden');
@@ -2197,6 +2277,7 @@
         function saveToLocalStorage() {
             const applicationData = {
                 pnr: state.pnr,
+                nameOfApplicant: state.applicants[0].passportInfo.pp_family_name,
                 totalApplicants: state.totalApplicants,
                 applicants: state.applicants,
                 currentApplicant: state.currentApplicant,
@@ -2211,13 +2292,10 @@
         function saveAndExit() {
             saveToLocalStorage();
             alert('Your application has been saved. You can return later to complete it.');
-            // In a real application, this might redirect to a different page
         }
 
         // Submit the application
         function submitApplication() {
-            console.log(state.applicants[0].passportInfo.pp_family_name);
-            
             // Prepare data for API
             const applicationData = {
                 pnr: state.pnr,
@@ -2228,10 +2306,7 @@
                 timestamp: new Date().toISOString()
             };
             
-            // In a real application, this would send data to a server
-            console.log('Submitting application data:', applicationData);
-            
-            // Example API call (replace with your actual API endpoint)
+            // Submit to server
             fetch('/server/submit-application.php', {
                 method: 'POST',
                 headers: {
@@ -2249,7 +2324,7 @@
                 alert(`Application with PNR ${state.pnr} submitted successfully!`);
                 
                 // Clear localStorage
-                localStorage.removeItem('ukVisaApplication');
+                localStorage.removeItem('ukVisaApplication-'+state.pnr);
                 
                 // Reset the form
                 document.getElementById('initial-screen').classList.remove('hidden');
@@ -2266,6 +2341,9 @@
                 
                 // Reset form
                 document.getElementById('applicant-count').value = '1';
+                
+                // Redirect to application form
+                window.location.href = 'application-form.php';
             })
             .catch(error => {
                 console.error('Error submitting application:', error);

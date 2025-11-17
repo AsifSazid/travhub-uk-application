@@ -1,5 +1,55 @@
+<?php
+require 'server/db_connection.php'; // your PDO connection
+
+$pnr = $_GET['pnr'] ?? null;
+$applicationData = null;
+
+if ($pnr) {
+    // 1. Fetch application info
+    $stmt = $pdo->prepare("SELECT * FROM applications WHERE pnr = ?");
+    $stmt->execute([$pnr]);
+    $application = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($application) {
+        // 2. Fetch all applicants
+        $stmt2 = $pdo->prepare("SELECT * FROM applicants WHERE pnr = ?");
+        $stmt2->execute([$pnr]);
+        $appRows = $stmt2->fetchAll(PDO::FETCH_ASSOC);
+
+        $applicants = [];
+        foreach ($appRows as $ap) {
+            $applicants[] = [
+                "pnr" => $ap['pnr'],
+                "user_pnr" => $ap['user_pnr'],
+                "completed" => (bool)$ap['completed'],
+                "passportInfo" => json_decode($ap['passport_info'], true),
+                "nidInfo" => json_decode($ap['nid_info'], true),
+                "contactInfo" => json_decode($ap['contact_info'], true),
+                "familyInfo" => json_decode($ap['family_info'], true),
+                "accommodationDetails" => json_decode($ap['accommodation_details'], true),
+                "employmentInfo" => json_decode($ap['employment_info'], true),
+                "incomeExpenditure" => json_decode($ap['income_expenditure'], true),
+                "travelInfo" => json_decode($ap['travel_info'], true),
+                "travelHistory" => json_decode($ap['travel_history'], true)
+            ];
+        }
+
+        // 3. Combine into JS-friendly structure
+        $applicationData = [
+            'pnr' => $application['pnr'],
+            'totalApplicants' => count($applicants),
+            'timestamp' => $application['created_at'],
+            'applicants' => $applicants
+        ];
+    }
+}
+
+// Pass $applicationData to JS
+?>
+
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,43 +67,50 @@
             background-color: white;
             font-family: inherit;
         }
-        
+
         .copy-field:hover {
             background-color: #f3f4f6;
             border-color: #3b82f6;
         }
-        
+
         .copy-field.copied {
             background-color: #d1fae5;
             color: #065f46;
             border-color: #10b981;
         }
-        
+
         .applicant-section {
             border-left: 4px solid #3b82f6;
             background-color: #f8fafc;
             transition: all 0.3s ease;
         }
-        
+
         .applicant-section.highlighted {
             border-left-color: #10b981;
             background-color: #f0fdf4;
             box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
         }
-        
+
         .section-header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
-        
+
         .fade-in {
             animation: fadeIn 0.5s ease-in-out;
         }
-        
+
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
-        
+
         .toast {
             position: fixed;
             top: 20px;
@@ -67,11 +124,11 @@
             transform: translateX(400px);
             transition: transform 0.3s ease;
         }
-        
+
         .toast.show {
             transform: translateX(0);
         }
-        
+
         .step-progress {
             display: flex;
             justify-content: space-between;
@@ -81,7 +138,7 @@
             border-radius: 0.5rem;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
-        
+
         .step-item {
             text-align: center;
             flex: 1;
@@ -89,11 +146,11 @@
             cursor: pointer;
             transition: all 0.3s ease;
         }
-        
+
         .step-item:hover {
             transform: translateY(-2px);
         }
-        
+
         .step-item:not(:last-child):after {
             content: '';
             position: absolute;
@@ -104,7 +161,7 @@
             background-color: #e5e7eb;
             z-index: 1;
         }
-        
+
         .step-icon {
             width: 40px;
             height: 40px;
@@ -119,51 +176,52 @@
             font-size: 0.875rem;
             transition: all 0.3s ease;
         }
-        
+
         .step-icon.active {
             background-color: #3b82f6;
             color: white;
         }
-        
+
         .step-icon.highlighted {
             background-color: #10b981;
             color: white;
             transform: scale(1.1);
         }
-        
+
         .step-label {
             font-size: 0.75rem;
             color: #6b7280;
             transition: all 0.3s ease;
         }
-        
+
         .step-label.active {
             color: #3b82f6;
             font-weight: 600;
         }
-        
+
         .step-label.highlighted {
             color: #10b981;
             font-weight: 700;
         }
-        
+
         .applicant-tab {
             cursor: pointer;
             transition: all 0.3s ease;
             border-bottom: 3px solid transparent;
         }
-        
+
         .applicant-tab.active {
             background-color: #3b82f6;
             color: white;
             border-bottom-color: #1d4ed8;
         }
-        
+
         .applicant-tab:hover:not(.active) {
             background-color: #f3f4f6;
         }
     </style>
 </head>
+
 <body class="bg-gray-50 min-h-screen">
     <div class="container mx-auto px-4 py-8 max-w-6xl">
         <!-- Header -->
@@ -202,23 +260,47 @@
     </div>
 
     <script>
-        let applicationData = null;
-        let currentApplicantIndex = 0;
+        let applicationData = <?php
+                                // If DB record exists, send JSON to JS
+                                if ($applicationData) {
+                                    echo json_encode($applicationData);
+                                } else {
+                                    echo 'null';
+                                }
+                                ?>;
+        const currentApplicantIndex = 0;
         const stepSections = [
-            'passport-info',
-            'nid-info', 
-            'contact-info',
-            'family-info',
-            'accommodation-info',
-            'employment-info',
-            'income-info',
-            'travel-info',
-            'travel-history'
+            'passport-info', 'nid-info', 'contact-info', 'family-info',
+            'accommodation-info', 'employment-info', 'income-info',
+            'travel-info', 'travel-history'
         ];
 
         // Initialize the page
         document.addEventListener('DOMContentLoaded', function() {
-            loadApplicationFromURL();
+            if (!applicationData) {
+                const savedApplication = localStorage.getItem('ukVisaApplication-<?php echo $pnr; ?>');
+                if (savedApplication) {
+                    applicationData = JSON.parse(savedApplication);
+                }
+            }
+
+            if (!applicationData) {
+                // Show error if nothing found
+                document.getElementById('application-container').innerHTML = `
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+                        <i class="fas fa-exclamation-triangle text-red-500 text-4xl mb-4"></i>
+                        <h3 class="text-xl font-semibold text-red-800 mb-2">Application Not Found</h3>
+                        <p class="text-red-600">No application found in DB or localStorage for PNR: ${urlParams.get('pnr') || 'N/A'}</p>
+                        <button onclick="window.location.href='dashboard.html'" class="mt-4 bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition duration-300">
+                            Back to Dashboard
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            // Otherwise, render the application as before
+            renderApplication();
             setupEventListeners();
         });
 
@@ -235,18 +317,18 @@
         function loadApplicationFromURL() {
             const urlParams = new URLSearchParams(window.location.search);
             const pnr = urlParams.get('pnr');
-            
+
             if (!pnr) {
                 showError('No PNR provided in URL');
                 return;
             }
 
-            const savedApplication = localStorage.getItem('ukVisaApplication-'+pnr);            
-            
+            const savedApplication = localStorage.getItem('ukVisaApplication-' + pnr);
+
             if (savedApplication) {
                 try {
                     applicationData = JSON.parse(savedApplication);
-                    
+
                     if (applicationData.pnr === pnr) {
                         renderApplication();
                     } else {
@@ -264,7 +346,7 @@
         // Render the application
         function renderApplication() {
             const container = document.getElementById('application-container');
-            
+
             let html = `
                 <!-- Application Header -->
                 <div class="bg-white rounded-xl shadow-lg overflow-hidden">
@@ -315,7 +397,7 @@
             html += renderApplicant(applicationData.applicants[currentApplicantIndex], currentApplicantIndex);
 
             container.innerHTML = html;
-            
+
             // Add event listeners for tabs
             if (applicationData.totalApplicants > 1) {
                 document.querySelectorAll('.applicant-tab').forEach(tab => {
@@ -325,10 +407,10 @@
                     });
                 });
             }
-            
+
             // Add copy functionality to all copy fields
             setupCopyFunctionality();
-            
+
             // Add step click functionality
             setupStepNavigation();
         }
@@ -346,7 +428,7 @@
                     <div class="border-b border-gray-200 px-6 py-4 bg-gray-50">
                         <h3 class="text-xl font-bold text-gray-800 flex items-center">
                             <i class="fas fa-user mr-2 text-blue-500"></i>
-                            Applicant ${index + 1} - ${applicant.id}
+                            Applicant ${index + 1} - ${applicant.user_pnr ?? applicant.id}
                             ${applicant.completed ? 
                                 '<span class="ml-2 bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Completed</span>' : 
                                 '<span class="ml-2 bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">In Progress</span>'
@@ -655,13 +737,13 @@
             if (!value && value !== 0 && value !== false) {
                 value = 'Not provided';
             }
-            
+
             if (value === true) value = 'Yes';
             if (value === false) value = 'No';
-            
+
             const displayValue = String(value).trim();
             const fieldId = `field-${Math.random().toString(36).substr(2, 9)}`;
-            
+
             if (isTextarea) {
                 return `
                     <div>
@@ -672,7 +754,7 @@
                     </div>
                 `;
             }
-            
+
             return `
                 <div>
                     <label class="block text-sm font-medium text-gray-600 mb-1">${label}</label>
@@ -686,7 +768,7 @@
         // Setup copy functionality
         function setupCopyFunctionality() {
             const copyFields = document.querySelectorAll('.copy-field');
-            
+
             copyFields.forEach(field => {
                 field.addEventListener('click', function() {
                     const value = this.getAttribute('data-value');
@@ -698,7 +780,7 @@
         // Setup step navigation
         function setupStepNavigation() {
             const stepItems = document.querySelectorAll('.step-item');
-            
+
             stepItems.forEach((step, index) => {
                 step.addEventListener('click', function() {
                     const stepIndex = parseInt(this.getAttribute('data-step'));
@@ -713,32 +795,32 @@
             document.querySelectorAll('.applicant-section').forEach(section => {
                 section.classList.remove('highlighted');
             });
-            
+
             document.querySelectorAll('.step-icon').forEach(icon => {
                 icon.classList.remove('highlighted');
             });
-            
+
             document.querySelectorAll('.step-label').forEach(label => {
                 label.classList.remove('highlighted');
             });
-            
+
             // Add highlight to selected step
             const stepElement = document.querySelector(`.step-item[data-step="${stepIndex}"]`);
             if (stepElement) {
                 stepElement.querySelector('.step-icon').classList.add('highlighted');
                 stepElement.querySelector('.step-label').classList.add('highlighted');
             }
-            
+
             // Highlight corresponding section
             const sectionId = stepSections[stepIndex];
             const sectionElement = document.getElementById(sectionId);
             if (sectionElement) {
                 sectionElement.classList.add('highlighted');
-                
+
                 // Scroll to section
-                sectionElement.scrollIntoView({ 
-                    behavior: 'smooth', 
-                    block: 'center' 
+                sectionElement.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
                 });
             }
         }
@@ -752,22 +834,22 @@
             textarea.style.left = '-999999px';
             textarea.style.top = '-999999px';
             document.body.appendChild(textarea);
-            
+
             // Select and copy the text
             textarea.focus();
             textarea.select();
-            
+
             try {
                 const successful = document.execCommand('copy');
                 document.body.removeChild(textarea);
-                
+
                 if (successful) {
                     // Show visual feedback
                     element.classList.add('copied');
-                    
+
                     // Show toast
                     showToast('Copied to clipboard!');
-                    
+
                     // Remove copied class after 1 second
                     setTimeout(() => {
                         element.classList.remove('copied');
@@ -786,11 +868,11 @@
         function showToast(message) {
             const toast = document.getElementById('toast');
             const toastMessage = document.getElementById('toast-message');
-            
+
             toastMessage.textContent = message;
             toast.classList.remove('hidden');
             toast.classList.add('show');
-            
+
             setTimeout(() => {
                 toast.classList.remove('show');
                 setTimeout(() => {
@@ -817,17 +899,20 @@
         // Download JSON
         function downloadJSON() {
             if (!applicationData) return;
-            
+
             const dataStr = JSON.stringify(applicationData, null, 2);
-            const dataBlob = new Blob([dataStr], {type: 'application/json'});
-            
+            const dataBlob = new Blob([dataStr], {
+                type: 'application/json'
+            });
+
             const link = document.createElement('a');
             link.href = URL.createObjectURL(dataBlob);
             link.download = `uk-visa-application-${applicationData.pnr}.json`;
             link.click();
-            
+
             showToast('JSON file downloaded!');
         }
     </script>
 </body>
+
 </html>

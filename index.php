@@ -1,5 +1,68 @@
+<?php
+// header("Content-Type: application/json");
+
+try {
+    $pdo = new PDO("mysql:host=localhost;dbname=travhub-uk-apply", "root", "");
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+    // Optional: load a specific PNR or all applications
+    $pnr = isset($_GET['pnr']) ? $_GET['pnr'] : null;
+
+    if ($pnr) {
+        $stmt = $pdo->prepare("SELECT * FROM applications WHERE pnr = ?");
+        $stmt->execute([$pnr]);
+    } else {
+        $stmt = $pdo->query("SELECT * FROM applications");
+    }
+
+    $applications = [];
+
+    while ($app = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        // Fetch applicants for this application
+        $stmt_applicants = $pdo->prepare("SELECT * FROM applicants WHERE pnr = ?");
+        $stmt_applicants->execute([$app['pnr']]);
+        $applicants = [];
+
+        while ($ap = $stmt_applicants->fetch(PDO::FETCH_ASSOC)) {
+            $applicants[] = [
+                "pnr" => $ap['pnr'],
+                "user_pnr" => $ap['user_pnr'],
+                "completed" => (bool)$ap['completed'],
+                "passportInfo" => json_decode($ap['passport_info'], true),
+                "nidInfo" => json_decode($ap['nid_info'], true),
+                "contactInfo" => json_decode($ap['contact_info'], true),
+                "familyInfo" => json_decode($ap['family_info'], true),
+                "accommodationDetails" => json_decode($ap['accommodation_details'], true),
+                "employmentInfo" => json_decode($ap['employment_info'], true),
+                "incomeExpenditure" => json_decode($ap['income_expenditure'], true),
+                "travelInfo" => json_decode($ap['travel_info'], true),
+                "travelHistory" => json_decode($ap['travel_history'], true)
+            ];
+        }
+
+        $applications[] = [
+            "pnr" => $app['pnr'],
+            "nameOfApplicant" => $app['name_of_applicant'],
+            "totalApplicants" => $app['total_applicants'],
+            "status" => $app['status'],
+            "timestamp" => $app['timestamp'],
+            "applicants" => $applicants
+        ];
+    }
+
+    // echo json_encode($applications, JSON_PRETTY_PRINT);
+} catch (Exception $e) {
+    echo json_encode([
+        "status" => "error",
+        "message" => $e->getMessage()
+    ]);
+}
+
+?>
+
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,48 +74,56 @@
             transition: all 0.3s ease;
             border-left: 4px solid transparent;
         }
-        
+
         .application-card:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             border-left-color: #3b82f6;
         }
-        
+
         .progress-bar {
             transition: width 0.5s ease-in-out;
         }
-        
+
         .fade-in {
             animation: fadeIn 0.5s ease-in-out;
         }
-        
+
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
-        
+
         .status-badge {
             font-size: 0.75rem;
             padding: 0.25rem 0.5rem;
             border-radius: 9999px;
         }
-        
+
         .status-complete {
             background-color: #10b981;
             color: white;
         }
-        
+
         .status-in-progress {
             background-color: #f59e0b;
             color: white;
         }
-        
+
         .status-not-started {
             background-color: #6b7280;
             color: white;
         }
     </style>
 </head>
+
 <body class="bg-gray-50 min-h-screen">
     <div class="container mx-auto px-4 py-8 max-w-6xl">
         <!-- Header -->
@@ -79,7 +150,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="bg-white rounded-xl shadow p-6">
                 <div class="flex items-center">
                     <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mr-4">
@@ -91,7 +162,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="bg-white rounded-xl shadow p-6">
                 <div class="flex items-center">
                     <div class="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center mr-4">
@@ -121,12 +192,12 @@
                     </button>
                 </div>
             </div>
-            
+
             <div class="p-6">
                 <div id="applications-list" class="space-y-4">
                     <!-- Applications will be listed here -->
                 </div>
-                
+
                 <div id="no-applications" class="text-center py-12 hidden">
                     <div class="max-w-md mx-auto">
                         <i class="fas fa-folder-open text-gray-300 text-6xl mb-6"></i>
@@ -191,7 +262,7 @@
             document.getElementById('close-modal').addEventListener('click', closeModal);
             document.getElementById('cancel-modal').addEventListener('click', closeModal);
             document.getElementById('continue-application').addEventListener('click', continueApplication);
-            
+
             // Close modal when clicking outside
             document.getElementById('application-modal').addEventListener('click', function(e) {
                 if (e.target === this) {
@@ -202,51 +273,56 @@
 
         // Load all applications from localStorage
         function loadApplications() {
-            applications = [];
+            applications = <?php echo json_encode($applications, JSON_PRETTY_PRINT); ?>;
 
+            // Merge with localStorage applications
             for (let i = 0; i < localStorage.length; i++) {
                 const key = localStorage.key(i);
-
                 if (key.startsWith("ukVisaApplication-")) {
                     try {
                         const appData = JSON.parse(localStorage.getItem(key));
-                        if (appData) applications.push(appData);
+                        if (appData) {
+                            appData.source = "local";
+                            if (!applications.some(a => a.pnr === appData.pnr)) {
+                                applications.push(appData);
+                            }
+                        }
                     } catch (e) {
-                        console.error("Error parsing:", key, e);
+                        console.error("Error parsing localStorage:", key, e);
                     }
                 }
             }
 
-            // Sort by latest update
-            applications.sort((a, b) => {
-                return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
-            });
+            // Sort by latest timestamp
+            applications.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
             renderApplications();
             updateStats();
         }
 
 
+
         // Render the applications list
         function renderApplications() {
             const listContainer = document.getElementById('applications-list');
             const noApplications = document.getElementById('no-applications');
-            
+
             if (applications.length === 0) {
                 listContainer.innerHTML = '';
                 noApplications.classList.remove('hidden');
                 return;
             }
-            
+
             noApplications.classList.add('hidden');
-            
+            console.log(applications);
+
             let html = '';
             applications.forEach((app, index) => {
                 const completedCount = app.applicants ? app.applicants.filter(a => a.completed).length : 0;
                 const totalApplicants = app.totalApplicants || 1;
                 const progress = Math.round((completedCount / totalApplicants) * 100);
                 const lastUpdated = new Date(app.timestamp || Date.now()).toLocaleDateString();
-                
+
                 // Determine status
                 let status, statusClass, statusText;
                 if (progress === 100) {
@@ -262,14 +338,17 @@
                     statusClass = 'status-not-started';
                     statusText = 'Not Started';
                 }
-                
+
                 html += `
                     <div class="application-card bg-white border border-gray-200 rounded-lg p-5 fade-in">
                         <div class="flex flex-col md:flex-row md:items-center justify-between">
                             <div class="flex-1 mb-4 me-4 md:mb-0">
                                 <div class="flex items-start justify-between">
                                     <div>
-                                        <h3 class="font-bold text-gray-800 text-lg">${app.pnr || 'Unknown PNR'}</h3>
+                                        <h3 class="font-bold text-gray-800 text-lg">
+                                            ${app.pnr || 'Unknown PNR'} || ${app.nameOfApplicant || ''}
+                                            ${app.source === 'local' ? '<span class="ml-2 text-xs px-2 py-0.5 bg-yellow-200 text-yellow-800 rounded-full">Local</span>' : ''}
+                                        </h3>
                                         <div class="flex flex-wrap items-center mt-2 text-sm text-gray-600 gap-2">
                                             <span class="flex items-center">
                                                 <i class="fas fa-users mr-1"></i> ${totalApplicants} applicant(s)
@@ -332,18 +411,18 @@
                     </div>
                 `;
             });
-            
+
             listContainer.innerHTML = html;
         }
 
         // Calculate progress for an individual applicant
         function calculateApplicantProgress(applicant) {
             if (!applicant) return 0;
-            
+
             // Count completed fields (simplified approach)
             let completedFields = 0;
             let totalFields = 0;
-            
+
             // Check passport info
             if (applicant.passportInfo) {
                 if (applicant.passportInfo.pp_given_name) completedFields++;
@@ -351,7 +430,7 @@
                 if (applicant.passportInfo.pp_number) completedFields++;
                 totalFields += 3;
             }
-            
+
             // Check contact info
             if (applicant.contactInfo) {
                 if (applicant.contactInfo.emails && applicant.contactInfo.emails[0]) completedFields++;
@@ -359,13 +438,13 @@
                 if (applicant.contactInfo.addresses && applicant.contactInfo.addresses[0] && applicant.contactInfo.addresses[0].line1) completedFields++;
                 totalFields += 3;
             }
-            
+
             // Check other sections
             if (applicant.familyInfo && applicant.familyInfo.relationshipStatus) completedFields++;
             if (applicant.employmentInfo && applicant.employmentInfo.employmentStatus) completedFields++;
             if (applicant.travelInfo && applicant.travelInfo.visitMainReason) completedFields++;
             totalFields += 3;
-            
+
             return totalFields > 0 ? Math.round((completedFields / totalFields) * 100) : 0;
         }
 
@@ -377,7 +456,7 @@
                 return app.applicants.every(applicant => applicant.completed);
             }).length;
             const inProgressApplications = totalApplications - completedApplications;
-            
+
             document.getElementById('total-applications').textContent = totalApplications;
             document.getElementById('completed-applications').textContent = completedApplications;
             document.getElementById('inprogress-applications').textContent = inProgressApplications;
@@ -385,16 +464,16 @@
 
         // Show application details in modal
         function showApplicationDetails(pnr) {
-            window.location.href = `show.html?pnr=${encodeURIComponent(pnr)}`;
+            window.location.href = `show.php?pnr=${encodeURIComponent(pnr)}`;
             // const application = applications.find(app => app.pnr === pnr);
             // if (!application) {
             //     alert('Application not found!');
             //     return;
             // }
-            
+
             // currentModalPNR = pnr;
             // const modalContent = document.getElementById('modal-content');
-            
+
             // let html = `
             //     <div class="space-y-6">
             //         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -415,12 +494,12 @@
             //                 <p class="text-gray-800">${application.applicants && application.applicants.every(a => a.completed) ? 'Complete' : 'In Progress'}</p>
             //             </div>
             //         </div>
-                    
+
             //         <div>
             //             <h4 class="font-medium text-gray-700 mb-3">Applicant Details</h4>
             //             <div class="space-y-4">
             // `;
-            
+
             // if (application.applicants) {
             //     application.applicants.forEach((applicant, index) => {
             //         const progress = calculateApplicantProgress(applicant);
@@ -454,13 +533,13 @@
             //         `;
             //     });
             // }
-            
+
             // html += `
             //             </div>
             //         </div>
             //     </div>
             // `;
-            
+
             // modalContent.innerHTML = html;
             // document.getElementById('application-modal').classList.remove('hidden');
         }
@@ -481,15 +560,15 @@
         // Continue application directly - FIXED VERSION
         function continueApplicationDirect(pnr) {
             console.log('Redirecting to application:', pnr);
-            
+
             // Redirect to application form with PNR parameter
-            window.location.href = `application-form.html?pnr=${encodeURIComponent(pnr)}`;
+            window.location.href = `application-form.php?pnr=${encodeURIComponent(pnr)}`;
         }
 
         // Create a new application
         function createNewApplication() {
             // Redirect to application form without parameters for new application
-            window.location.href = 'application-form.html';
+            window.location.href = 'application-form.php';
         }
 
         // Delete an application
@@ -497,16 +576,17 @@
             if (!confirm('Are you sure you want to delete this application? This action cannot be undone.')) {
                 return;
             }
-            
+
             // Remove from localStorage
             localStorage.removeItem('ukVisaApplication');
-            
+
             // Show success message
             alert(`Application ${pnr} has been deleted.`);
-            
+
             // Reload the applications list
             loadApplications();
         }
     </script>
 </body>
+
 </html>
