@@ -606,24 +606,46 @@ if ($pnr) {
                         <div class="space-y-4">
                             ${renderField('Has UK Address', applicant.accommodationDetails?.hasAddress !== null ? (applicant.accommodationDetails?.hasAddress ? 'Yes' : 'No') : 'Not provided')}
                             
-                            <!-- Accommodation Addresses -->
-                            <div>
-                                <h5 class="font-medium text-gray-700 mb-2">Accommodation Addresses</h5>
-                                <div class="space-y-3">
-                                    ${(applicant.accommodationDetails?.addresses || []).map((address, addrIndex) => `
-                                        <div class="border border-gray-200 rounded-lg p-3 bg-white">
-                                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                                ${renderField('Hotel Name', applicant.accommodationDetails?.hotels?.[addrIndex])}
-                                                ${renderField('Line 1', address.line1)}
-                                                ${renderField('Line 2', address.line2)}
-                                                ${renderField('City', address.city)}
-                                                ${renderField('State', address.state)}
-                                                ${renderField('Postal Code', address.postalCode)}
+                            ${applicant.accommodationDetails?.hasAddress === true ? `
+                                <!-- Accommodation Addresses -->
+                                <div>
+                                    <h5 class="font-medium text-gray-700 mb-2">Accommodation Addresses</h5>
+                                    <div class="space-y-3">
+                                        ${(applicant.accommodationDetails?.addresses || []).map((address, addrIndex) => `
+                                            <div class="border border-gray-200 rounded-lg p-3 bg-white">
+                                                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                                    ${renderField('Hotel Name', applicant.accommodationDetails?.hotels?.[addrIndex])}
+                                                    ${renderField('Line 1', address.line1)}
+                                                    ${renderField('Line 2', address.line2)}
+                                                    ${renderField('City', address.city)}
+                                                    ${renderField('State', address.state)}
+                                                    ${renderField('Postal Code', address.postalCode)}
+                                                </div>
                                             </div>
-                                        </div>
-                                    `).join('')}
+                                        `).join('')}
+                                    </div>
                                 </div>
-                            </div>
+                            ` : ''}
+                            
+                            ${applicant.accommodationDetails?.hasAddress === false && applicant.accommodationDetails?.custom_accommodation ? `
+                                <!-- Custom Accommodation Plans -->
+                                <div>
+                                    <h5 class="font-medium text-gray-700 mb-2">Accommodation Plans</h5>
+                                    <div class="border border-gray-200 rounded-lg p-3 bg-white">
+                                        <div class="grid grid-cols-1">
+                                            ${renderField('Accommodation Description', applicant.accommodationDetails.custom_accommodation, true)}
+                                        </div>
+                                    </div>
+                                </div>
+                            ` : ''}
+                            
+                            ${applicant.accommodationDetails?.hasAddress === false && !applicant.accommodationDetails?.custom_accommodation ? `
+                                <!-- No accommodation details provided -->
+                                <div class="text-center py-4 text-gray-500">
+                                    <i class="fas fa-info-circle text-gray-400 text-2xl mb-2"></i>
+                                    <p>No accommodation details provided</p>
+                                </div>
+                            ` : ''}
                         </div>
                     </div>
 

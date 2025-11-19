@@ -59,7 +59,6 @@ if ($pnr) {
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* আপনার existing CSS styles এখানে রাখুন */
         .fade-in {
             animation: fadeIn 0.5s ease-in-out;
         }
@@ -366,7 +365,7 @@ if ($pnr) {
             ]
         };
 
-        // Check for URL parameters on page load - MODIFIED VERSION
+        // Check for URL parameters on page load
         function checkURLParameters() {
             const urlParams = new URLSearchParams(window.location.search);
             const pnr = urlParams.get('pnr');
@@ -471,9 +470,6 @@ if ($pnr) {
 
         // Check if there's a saved application in localStorage
         function checkForSavedApplication() {
-            // ---------------------------------------------------------
-            // Find LAST SAVED Application from localStorage
-            // ---------------------------------------------------------
             let lastApplication = null;
             let latestTimestamp = 0;
 
@@ -484,7 +480,6 @@ if ($pnr) {
                     try {
                         const storedValue = JSON.parse(localStorage.getItem(key));
                         
-                        // Make sure object has timestamp
                         if (storedValue && storedValue.timestamp) {
                             const ts = new Date(storedValue.timestamp).getTime();
                             
@@ -499,9 +494,6 @@ if ($pnr) {
                 }
             }
 
-            // ---------------------------------------------------------
-            // Load last application if exists
-            // ---------------------------------------------------------
             if (lastApplication) {
                 document.getElementById('saved-pnr').textContent = lastApplication.pnr;
                 document.getElementById('saved-application-section').classList.remove('hidden');
@@ -533,39 +525,32 @@ if ($pnr) {
 
         // Load saved application from localStorage
         function loadSavedApplication() {
-            // 1. Get the PNR shown in UI
             const pnr = document.getElementById('saved-pnr').textContent.trim();
             if (!pnr) {
                 console.error("No PNR found.");
                 return;
             }
 
-            // 2. Load from localStorage
             const savedApplication = localStorage.getItem('ukVisaApplication-' + pnr);
             if (!savedApplication) {
                 console.error("No saved application found for PNR:", pnr);
                 return;
             }
 
-            // 3. Parse it
             const applicationData = JSON.parse(savedApplication);
 
-            // 4. Restore state
             state.totalApplicants = applicationData.totalApplicants;
             state.pnr = applicationData.pnr;
             state.applicants = applicationData.applicants;
             state.currentApplicant = applicationData.currentApplicant || 0;
             state.currentStep = applicationData.currentStep || 0;
 
-            // 5. Show UI
             document.getElementById('initial-screen').classList.add('hidden');
             document.getElementById('multi-applicant-form').classList.remove('hidden');
 
-            // 6. Display PNR
             document.getElementById('pnr-display').textContent = state.pnr;
             document.getElementById('total-applicants').textContent = state.totalApplicants;
 
-            // 7. Rebuild UI
             generateTabs();
             generateStepNavigation();
             generateFormSteps();
@@ -668,7 +653,8 @@ if ($pnr) {
                         city: '',
                         state: '',
                         postalCode: ''
-                    }]
+                    }],
+                    custom_accommodation: ''
                 },
                 employmentInfo: {
                     employmentStatus: '',
@@ -696,7 +682,9 @@ if ($pnr) {
                     arrivalDate: '',
                     leaveDate: ''
                 },
-                travelHistory: []
+                travelHistory: {
+                    history: ''
+                }
             };
         }
 
@@ -1394,56 +1382,72 @@ if ($pnr) {
             `;
         }
 
-        // Generate Accommodation Details step
+        // Generate Accommodation Details step - FIXED VERSION
         function generateAccommodationDetailsStep(applicant) {
+            // Ensure arrays exist
+            if (!applicant.accommodationDetails.hotels) {
+                applicant.accommodationDetails.hotels = [''];
+            }
+            if (!applicant.accommodationDetails.addresses) {
+                applicant.accommodationDetails.addresses = [{
+                    line1: '',
+                    line2: '',
+                    city: '',
+                    state: '',
+                    postalCode: ''
+                }];
+            }
+
             let addressesHTML = '';
             applicant.accommodationDetails.addresses.forEach((address, index) => {
+                const hotelValue = applicant.accommodationDetails.hotels[index] || '';
+                
                 addressesHTML += `
                     <div class="address-group">
                         <div class="flex justify-between items-center mb-4">
                             <h4 class="font-medium text-gray-700">Accommodation Address ${index + 1}</h4>
                             ${index > 0 ? `
-                                <button type="button" class="bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded-lg text-sm" onclick="removeAccommodationField('addresses', ${index})">
+                                <button type="button" class="bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded-lg text-sm" onclick="removeAccommodationAddress(${index})">
                                     Remove Address
                                 </button>
                             ` : ''}
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-gray-700 mb-2">Hotel Name</label>
+                            <div class="md:col-span-2">
+                                <label class="block text-gray-700 mb-2">Hotel Name (if applicable)</label>
                                 <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                                       value="${applicant.accommodationDetails.hotels[index] || ''}" 
-                                       onchange="updateAccommodationArrayData('hotels', ${index}, this.value)">
+                                    value="${hotelValue}" 
+                                    onchange="updateAccommodationHotel(${index}, this.value)">
                             </div>
                             <div class="md:col-span-2">
-                                <label class="block text-gray-700 mb-2">Line 1</label>
+                                <label class="block text-gray-700 mb-2">Address Line 1 *</label>
                                 <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                                       value="${address.line1 || ''}" 
-                                       onchange="updateAccommodationAddressData(${index}, 'line1', this.value)">
+                                    value="${address.line1 || ''}" 
+                                    onchange="updateAccommodationAddressData(${index}, 'line1', this.value)" ${applicant.accommodationDetails.hasAddress ? 'required' : ''}>
                             </div>
                             <div class="md:col-span-2">
-                                <label class="block text-gray-700 mb-2">Line 2</label>
+                                <label class="block text-gray-700 mb-2">Address Line 2</label>
                                 <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                                       value="${address.line2 || ''}" 
-                                       onchange="updateAccommodationAddressData(${index}, 'line2', this.value)">
+                                    value="${address.line2 || ''}" 
+                                    onchange="updateAccommodationAddressData(${index}, 'line2', this.value)">
                             </div>
                             <div>
-                                <label class="block text-gray-700 mb-2">City</label>
+                                <label class="block text-gray-700 mb-2">City *</label>
                                 <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                                       value="${address.city || ''}" 
-                                       onchange="updateAccommodationAddressData(${index}, 'city', this.value)">
+                                    value="${address.city || ''}" 
+                                    onchange="updateAccommodationAddressData(${index}, 'city', this.value)" ${applicant.accommodationDetails.hasAddress ? 'required' : ''}>
                             </div>
                             <div>
-                                <label class="block text-gray-700 mb-2">State</label>
+                                <label class="block text-gray-700 mb-2">State/Province *</label>
                                 <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                                       value="${address.state || ''}" 
-                                       onchange="updateAccommodationAddressData(${index}, 'state', this.value)">
+                                    value="${address.state || ''}" 
+                                    onchange="updateAccommodationAddressData(${index}, 'state', this.value)" ${applicant.accommodationDetails.hasAddress ? 'required' : ''}>
                             </div>
                             <div>
-                                <label class="block text-gray-700 mb-2">Postal Code</label>
+                                <label class="block text-gray-700 mb-2">Postal Code *</label>
                                 <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                                       value="${address.postalCode || ''}" 
-                                       onchange="updateAccommodationAddressData(${index}, 'postalCode', this.value)">
+                                    value="${address.postalCode || ''}" 
+                                    onchange="updateAccommodationAddressData(${index}, 'postalCode', this.value)" ${applicant.accommodationDetails.hasAddress ? 'required' : ''}>
                             </div>
                         </div>
                     </div>
@@ -1453,31 +1457,50 @@ if ($pnr) {
             return `
                 <div class="space-y-6">
                     <div>
-                        <label class="block text-gray-700 mb-2">Do you have an address for where you are going to stay in the UK?</label>
+                        <label class="block text-gray-700 mb-2">Do you have accommodation arranged in the UK? *</label>
                         <div class="flex space-x-4">
                             <label class="inline-flex items-center">
                                 <input type="radio" name="ad_have_address" value="yes" class="h-4 w-4 text-blue-600" 
-                                       ${applicant.accommodationDetails.hasAddress === true ? 'checked' : ''}
-                                       onchange="updateApplicantData('accommodationDetails', 'hasAddress', this.value === 'yes')">
+                                    ${applicant.accommodationDetails.hasAddress === true ? 'checked' : ''}
+                                    onchange="updateApplicantData('accommodationDetails', 'hasAddress', this.value === 'yes')" required>
                                 <span class="ml-2">Yes</span>
                             </label>
                             <label class="inline-flex items-center">
                                 <input type="radio" name="ad_have_address" value="no" class="h-4 w-4 text-blue-600"
-                                       ${applicant.accommodationDetails.hasAddress === false ? 'checked' : ''}
-                                       onchange="updateApplicantData('accommodationDetails', 'hasAddress', this.value === 'yes')">
+                                    ${applicant.accommodationDetails.hasAddress === false ? 'checked' : ''}
+                                    onchange="updateApplicantData('accommodationDetails', 'hasAddress', this.value === 'yes')" required>
                                 <span class="ml-2">No</span>
                             </label>
                         </div>
                     </div>
                     
-                    <div>
-                        <h3 class="text-lg font-medium text-gray-800 mb-4">Accommodation Addresses</h3>
-                        ${addressesHTML}
-                        <button type="button" class="mt-2 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg flex items-center" onclick="addAccommodationField('addresses')">
-                            <i class="fas fa-plus mr-2"></i> Add Another Address
-                        </button>
-                    </div>
+                    ${applicant.accommodationDetails.hasAddress === true ? `
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-800 mb-4">Accommodation Details</h3>
+                            ${addressesHTML}
+                            <button type="button" class="mt-2 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg flex items-center" onclick="addAccommodationAddress()">
+                                <i class="fas fa-plus mr-2"></i> Add Another Accommodation
+                            </button>
+                        </div>
+                    ` : ''}
+                    
+                    ${applicant.accommodationDetails.hasAddress === false ? `
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-800 mb-4">Accommodation Plans</h3>
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <label class="block text-gray-700 mb-2">Please describe your accommodation plans in the UK:</label>
+                                <textarea 
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                    rows="4"
+                                    placeholder="Example: I plan to stay in hotels and will book accommodation upon arrival. I'm considering staying in central London area and will make reservations through booking websites..."
+                                    onchange="updateApplicantData('accommodationDetails', 'custom_accommodation', this.value)"
+                                >${applicant.accommodationDetails.custom_accommodation || ''}</textarea>
+                                <p class="text-sm text-gray-500 mt-2">Please provide details about your accommodation arrangements, such as hotel bookings, area preferences, or any other plans.</p>
+                            </div>
+                        </div>
+                    ` : ''}
                 </div>
+                <p class="text-sm text-gray-500 mt-4">* Required fields</p>
             `;
         }
 
@@ -1490,6 +1513,7 @@ if ($pnr) {
                         <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 onchange="updateApplicantData('employmentInfo', 'employmentStatus', this.value)" required>
                             <option value="">Select</option>
+                            <option value="business-man" ${applicant.employmentInfo.employmentStatus === 'business-man' ? 'selected' : ''}>Businessman</option>
                             <option value="employed" ${applicant.employmentInfo.employmentStatus === 'employed' ? 'selected' : ''}>Employed</option>
                             <option value="self-employed" ${applicant.employmentInfo.employmentStatus === 'self-employed' ? 'selected' : ''}>Self-Employed</option>
                             <option value="student" ${applicant.employmentInfo.employmentStatus === 'student' ? 'selected' : ''}>Student</option>
@@ -1542,40 +1566,42 @@ if ($pnr) {
         // Generate Income & Expenditure step
         function generateIncomeExpenditureStep(applicant) {
             let paymentInfoHTML = '';
-            applicant.incomeExpenditure.paymentInfo.forEach((payment, index) => {
-                paymentInfoHTML += `
-                    <div class="dynamic-field-group">
-                        <div class="flex justify-between items-center mb-4">
-                            <h4 class="font-medium text-gray-700">Payment Source ${index + 1}</h4>
-                            ${index > 0 ? `
-                                <button type="button" class="bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded-lg text-sm" onclick="removePaymentInfo(${index})">
-                                    Remove Payment
-                                </button>
-                            ` : ''}
+            if (applicant.incomeExpenditure.paymentInfo) {
+                applicant.incomeExpenditure.paymentInfo.forEach((payment, index) => {
+                    paymentInfoHTML += `
+                        <div class="dynamic-field-group">
+                            <div class="flex justify-between items-center mb-4">
+                                <h4 class="font-medium text-gray-700">Payment Source ${index + 1}</h4>
+                                ${index > 0 ? `
+                                    <button type="button" class="bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded-lg text-sm" onclick="removePaymentInfo(${index})">
+                                        Remove Payment
+                                    </button>
+                                ` : ''}
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-gray-700 mb-2">Currency</label>
+                                    <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                           value="${payment.currency || ''}" 
+                                           onchange="updatePaymentInfoData(${index}, 'currency', this.value)">
+                                </div>
+                                <div>
+                                    <label class="block text-gray-700 mb-2">Amount</label>
+                                    <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                           value="${payment.amount || ''}" 
+                                           onchange="updatePaymentInfoData(${index}, 'amount', this.value)">
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-gray-700 mb-2">What are you being paid for</label>
+                                    <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                           value="${payment.paidFor || ''}" 
+                                           onchange="updatePaymentInfoData(${index}, 'paidFor', this.value)">
+                                </div>
+                            </div>
                         </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-gray-700 mb-2">Currency</label>
-                                <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                                       value="${payment.currency || ''}" 
-                                       onchange="updatePaymentInfoData(${index}, 'currency', this.value)">
-                            </div>
-                            <div>
-                                <label class="block text-gray-700 mb-2">Amount</label>
-                                <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                                       value="${payment.amount || ''}" 
-                                       onchange="updatePaymentInfoData(${index}, 'amount', this.value)">
-                            </div>
-                            <div class="md:col-span-2">
-                                <label class="block text-gray-700 mb-2">What are you being paid for</label>
-                                <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                                       value="${payment.paidFor || ''}" 
-                                       onchange="updatePaymentInfoData(${index}, 'paidFor', this.value)">
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
+                    `;
+                });
+            }
             
             return `
                 <div class="space-y-6">
@@ -1709,7 +1735,55 @@ if ($pnr) {
             `;
         }
 
-        // Add a new contact field (email, phone, or address)
+        // ========== ACCOMMODATION RELATED FUNCTIONS ==========
+        function addAccommodationAddress() {
+            const applicant = state.applicants[state.currentApplicant];
+            if (!applicant.accommodationDetails.addresses) {
+                applicant.accommodationDetails.addresses = [];
+            }
+            if (!applicant.accommodationDetails.hotels) {
+                applicant.accommodationDetails.hotels = [];
+            }
+            
+            applicant.accommodationDetails.addresses.push({
+                line1: '',
+                line2: '',
+                city: '',
+                state: '',
+                postalCode: ''
+            });
+            applicant.accommodationDetails.hotels.push('');
+            generateFormSteps();
+            saveToLocalStorage();
+        }
+
+        function removeAccommodationAddress(index) {
+            const applicant = state.applicants[state.currentApplicant];
+            applicant.accommodationDetails.addresses.splice(index, 1);
+            applicant.accommodationDetails.hotels.splice(index, 1);
+            generateFormSteps();
+            saveToLocalStorage();
+        }
+
+        function updateAccommodationHotel(index, value) {
+            const applicant = state.applicants[state.currentApplicant];
+            if (!applicant.accommodationDetails.hotels) {
+                applicant.accommodationDetails.hotels = [];
+            }
+            applicant.accommodationDetails.hotels[index] = value;
+            saveToLocalStorage();
+        }
+
+        function updateAccommodationAddressData(addressIndex, field, value) {
+            const applicant = state.applicants[state.currentApplicant];
+            if (!applicant.accommodationDetails.addresses) {
+                applicant.accommodationDetails.addresses = [];
+            }
+            applicant.accommodationDetails.addresses[addressIndex][field] = value;
+            saveToLocalStorage();
+        }
+
+        // ========== CONTACT RELATED FUNCTIONS ==========
         function addContactField(type) {
             const applicant = state.applicants[state.currentApplicant];
             
@@ -1734,7 +1808,6 @@ if ($pnr) {
             saveToLocalStorage();
         }
 
-        // Remove a contact field
         function removeContactField(type, index) {
             const applicant = state.applicants[state.currentApplicant];
             
@@ -1750,23 +1823,24 @@ if ($pnr) {
             saveToLocalStorage();
         }
 
-        // Update contact array data (emails or phones)
         function updateContactArrayData(field, index, value) {
             const applicant = state.applicants[state.currentApplicant];
             applicant.contactInfo[field][index] = value;
             saveToLocalStorage();
         }
 
-        // Update contact address data
         function updateContactAddressData(addressIndex, field, value) {
             const applicant = state.applicants[state.currentApplicant];
             applicant.contactInfo.addresses[addressIndex][field] = value;
             saveToLocalStorage();
         }
 
-        // Add a new family member
+        // ========== FAMILY RELATED FUNCTIONS ==========
         function addFamilyMember() {
             const applicant = state.applicants[state.currentApplicant];
+            if (!applicant.familyInfo.familyMembers) {
+                applicant.familyInfo.familyMembers = [];
+            }
             applicant.familyInfo.familyMembers.push({
                 relation: '',
                 givenName: '',
@@ -1782,7 +1856,6 @@ if ($pnr) {
             saveToLocalStorage();
         }
 
-        // Remove a family member
         function removeFamilyMember(index) {
             const applicant = state.applicants[state.currentApplicant];
             applicant.familyInfo.familyMembers.splice(index, 1);
@@ -1791,12 +1864,10 @@ if ($pnr) {
             saveToLocalStorage();
         }
 
-        // Update family member data
         function updateFamilyMemberData(memberIndex, field, value) {
             const applicant = state.applicants[state.currentApplicant];
             applicant.familyInfo.familyMembers[memberIndex][field] = value;
             
-            // Show/hide passport section based on travellingUK
             if (field === 'travellingUK') {
                 const passportSection = document.getElementById(`passport-section-${memberIndex}`);
                 if (passportSection) {
@@ -1813,64 +1884,18 @@ if ($pnr) {
             saveToLocalStorage();
         }
 
-        // Update family relative address
         function updateFamilyRelativeAddress(field, value) {
             const applicant = state.applicants[state.currentApplicant];
             applicant.familyInfo.relativeAddress[field] = value;
             saveToLocalStorage();
         }
 
-        // Add a new accommodation field (hotels or addresses)
-        function addAccommodationField(type) {
-            const applicant = state.applicants[state.currentApplicant];
-            
-            if (type === 'hotels') {
-                applicant.accommodationDetails.hotels.push('');
-            } else if (type === 'addresses') {
-                applicant.accommodationDetails.addresses.push({
-                    line1: '',
-                    line2: '',
-                    city: '',
-                    state: '',
-                    postalCode: ''
-                });
-            }
-            
-            generateFormSteps();
-            saveToLocalStorage();
-        }
-
-        // Remove an accommodation field
-        function removeAccommodationField(type, index) {
-            const applicant = state.applicants[state.currentApplicant];
-            
-            if (type === 'hotels') {
-                applicant.accommodationDetails.hotels.splice(index, 1);
-            } else if (type === 'addresses') {
-                applicant.accommodationDetails.addresses.splice(index, 1);
-            }
-            
-            generateFormSteps();
-            saveToLocalStorage();
-        }
-
-        // Update accommodation array data (hotels)
-        function updateAccommodationArrayData(field, index, value) {
-            const applicant = state.applicants[state.currentApplicant];
-            applicant.accommodationDetails[field][index] = value;
-            saveToLocalStorage();
-        }
-
-        // Update accommodation address data
-        function updateAccommodationAddressData(addressIndex, field, value) {
-            const applicant = state.applicants[state.currentApplicant];
-            applicant.accommodationDetails.addresses[addressIndex][field] = value;
-            saveToLocalStorage();
-        }
-
-        // Add a new payment info
+        // ========== PAYMENT RELATED FUNCTIONS ==========
         function addPaymentInfo() {
             const applicant = state.applicants[state.currentApplicant];
+            if (!applicant.incomeExpenditure.paymentInfo) {
+                applicant.incomeExpenditure.paymentInfo = [];
+            }
             applicant.incomeExpenditure.paymentInfo.push({
                 currency: '',
                 amount: '',
@@ -1881,7 +1906,6 @@ if ($pnr) {
             saveToLocalStorage();
         }
 
-        // Remove a payment info
         function removePaymentInfo(index) {
             const applicant = state.applicants[state.currentApplicant];
             applicant.incomeExpenditure.paymentInfo.splice(index, 1);
@@ -1890,14 +1914,13 @@ if ($pnr) {
             saveToLocalStorage();
         }
 
-        // Update payment info data
         function updatePaymentInfoData(paymentIndex, field, value) {
             const applicant = state.applicants[state.currentApplicant];
             applicant.incomeExpenditure.paymentInfo[paymentIndex][field] = value;
             saveToLocalStorage();
         }
 
-        // Update applicant data when form fields change
+        // ========== CORE APPLICATION FUNCTIONS ==========
         function updateApplicantData(category, field, value) {
             state.applicants[state.currentApplicant][category][field] = value;
             
@@ -1915,13 +1938,16 @@ if ($pnr) {
             
             // Special handling for employment status
             if (category === 'employmentInfo' && field === 'employmentStatus') {
-                // Regenerate form to show/hide employment details
                 generateFormSteps();
             }
             
             // Special handling for travel reason
             if (category === 'travelInfo' && field === 'visitMainReason') {
-                // Regenerate form to show/hide travel reason details
+                generateFormSteps();
+            }
+            
+            // Special handling for accommodation hasAddress
+            if (category === 'accommodationDetails' && field === 'hasAddress') {
                 generateFormSteps();
             }
             
@@ -1930,19 +1956,12 @@ if ($pnr) {
                 state.applicants[state.currentApplicant].completed = true;
             }
             
-            // Update step navigation to reflect completion status
             generateStepNavigation();
-            
-            // Save to localStorage
             saveToLocalStorage();
-            
-            // Update progress indicators
             updateProgressIndicators();
         }
 
-        // Navigate to the next step
         function nextStep() {
-            // Validate current step before proceeding
             if (!validateCurrentStep()) {
                 alert('Please fill in all required fields before proceeding.');
                 return;
@@ -1954,48 +1973,37 @@ if ($pnr) {
                 generateStepNavigation();
                 updateUI();
             } else {
-                // Mark current applicant as complete
                 state.applicants[state.currentApplicant].completed = true;
                 
-                // Check if all applicants are complete
                 const allApplicantsComplete = state.applicants.every(applicant => applicant.completed);
                 
                 if (allApplicantsComplete) {
-                    // All applicants completed, show summary
                     showSummary();
                 } else if (state.currentApplicant < state.totalApplicants - 1) {
-                    // Show next applicant button
                     document.getElementById('next-applicant-btn').classList.remove('hidden');
                     document.getElementById('next-btn').classList.add('hidden');
                 }
                 
-                // Update progress
                 updateProgressIndicators();
             }
             
-            // Save state
             saveToLocalStorage();
         }
 
-        // Move to the next applicant
         function nextApplicant() {
             if (state.currentApplicant < state.totalApplicants - 1) {
                 state.currentApplicant++;
                 state.currentStep = 0;
                 
-                // Hide next applicant button
                 document.getElementById('next-applicant-btn').classList.add('hidden');
                 document.getElementById('next-btn').classList.remove('hidden');
                 
-                // Switch to the next applicant
                 switchApplicant(state.currentApplicant);
             } else {
-                // This is the last applicant, show summary
                 showSummary();
             }
         }
 
-        // Navigate to the previous step
         function previousStep() {
             if (state.currentStep > 0) {
                 state.currentStep--;
@@ -2003,26 +2011,19 @@ if ($pnr) {
                 generateStepNavigation();
                 updateUI();
             } else if (state.currentStep === 0 && state.currentApplicant > 0) {
-                // Move to the previous applicant's last step
                 state.currentApplicant--;
                 state.currentStep = state.totalSteps - 1;
                 switchApplicant(state.currentApplicant);
             }
             
-            // Save state
             saveToLocalStorage();
         }
 
-        // Validate current step
         function validateCurrentStep() {
-            // In a real application, this would validate all required fields in the current step
-            // For this demo, we'll just return true
             return true;
         }
 
-        // Update the UI based on current state
         function updateUI() {
-            // Update step display
             document.querySelectorAll('.step').forEach((step, index) => {
                 if (index === state.currentStep) {
                     step.classList.add('active');
@@ -2031,22 +2032,18 @@ if ($pnr) {
                 }
             });
             
-            // Update individual progress bar
             const individualProgressPercentage = ((state.currentStep + 1) / state.totalSteps) * 100;
             document.getElementById('individual-progress-bar').style.width = `${individualProgressPercentage}%`;
             
-            // Update step counter
             document.getElementById('current-step').textContent = state.currentStep + 1;
             document.getElementById('current-applicant-number').textContent = state.currentApplicant + 1;
             
-            // Update button visibility
             if (state.currentStep === 0 && state.currentApplicant === 0) {
                 document.getElementById('prev-btn').classList.add('hidden');
             } else {
                 document.getElementById('prev-btn').classList.remove('hidden');
             }
             
-            // Check if we're on the summary step (special case)
             const isSummaryStep = document.getElementById('form-steps').innerHTML.includes('Application Summary');
             
             if (isSummaryStep) {
@@ -2054,7 +2051,6 @@ if ($pnr) {
                 document.getElementById('next-btn').classList.add('hidden');
                 document.getElementById('next-applicant-btn').classList.add('hidden');
             } else if (state.currentStep === state.totalSteps - 1) {
-                // Always show "Next" on the last form step to go to Summary
                 document.getElementById('submit-btn').classList.add('hidden');
                 document.getElementById('next-btn').classList.remove('hidden');
                 document.getElementById('next-applicant-btn').classList.add('hidden');
@@ -2064,23 +2060,18 @@ if ($pnr) {
                 document.getElementById('next-applicant-btn').classList.add('hidden');
             }
             
-            // Update progress indicators
             updateProgressIndicators();
         }
 
-        // Update progress indicators
         function updateProgressIndicators() {
-            // Update overall progress
             const completedApplicants = state.applicants.filter(app => app.completed).length;
             const overallProgressPercentage = (completedApplicants / state.totalApplicants) * 100;
             document.getElementById('overall-progress-bar').style.width = `${overallProgressPercentage}%`;
             document.getElementById('completed-applicants').textContent = completedApplicants;
             
-            // Update tabs with progress
             generateTabs();
         }
 
-        // Show the summary of all applicants
         function showSummary() {
             const formStepsContainer = document.getElementById('form-steps');
             formStepsContainer.innerHTML = '';
@@ -2132,23 +2123,19 @@ if ($pnr) {
             
             formStepsContainer.appendChild(summaryElement);
             
-            // Add event listeners for summary buttons
             document.getElementById('download-json').addEventListener('click', downloadJSON);
             document.getElementById('submit-final').addEventListener('click', submitApplication);
             
-            // Update buttons for summary view
             document.getElementById('prev-btn').classList.remove('hidden');
             document.getElementById('next-btn').classList.add('hidden');
             document.getElementById('next-applicant-btn').classList.add('hidden');
             document.getElementById('submit-btn').classList.add('hidden');
             
-            // Update progress bars to show completion
             document.getElementById('individual-progress-bar').style.width = '100%';
             document.getElementById('overall-progress-bar').style.width = '100%';
             document.getElementById('current-step').textContent = 'Summary';
         }
 
-        // Generate summary content for all applicants
         function generateSummaryContent() {
             let summaryHTML = '';
             
@@ -2163,70 +2150,47 @@ if ($pnr) {
                         </div>
                         <div class="p-4">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <!-- Passport Information -->
                                 <div class="summary-item">
                                     <h4 class="font-medium text-gray-700">Passport Information</h4>
                                     <p class="text-gray-600">Given Name: ${applicant.passportInfo.pp_given_name || 'Not provided'}</p>
                                     <p class="text-gray-600">Family Name: ${applicant.passportInfo.pp_family_name || 'Not provided'}</p>
                                     <p class="text-gray-600">Gender: ${applicant.passportInfo.pp_gender || 'Not provided'}</p>
                                     <p class="text-gray-600">Passport Number: ${applicant.passportInfo.pp_number || 'Not provided'}</p>
-                                    <p class="text-gray-600">Issue Date: ${applicant.passportInfo.pp_issue_date || 'Not provided'}</p>
-                                    <p class="text-gray-600">Expiry Date: ${applicant.passportInfo.pp_expiry_date || 'Not provided'}</p>
                                 </div>
                                 
-                                <!-- NID Information -->
                                 <div class="summary-item">
                                     <h4 class="font-medium text-gray-700">NID Information</h4>
                                     <p class="text-gray-600">Has NID: ${applicant.nidInfo.has_nid !== null ? (applicant.nidInfo.has_nid ? 'Yes' : 'No') : 'Not provided'}</p>
                                     ${applicant.nidInfo.has_nid ? `
                                         <p class="text-gray-600">NID Number: ${applicant.nidInfo.nid_number || 'Not provided'}</p>
-                                        <p class="text-gray-600">Issuing Authority: ${applicant.nidInfo.nid_issuing_authority || 'Not provided'}</p>
                                     ` : ''}
                                 </div>
                                 
-                                <!-- Contact Information -->
                                 <div class="summary-item">
                                     <h4 class="font-medium text-gray-700">Contact Information</h4>
                                     <p class="text-gray-600">Emails: ${applicant.contactInfo.emails.filter(e => e).join(', ') || 'Not provided'}</p>
                                     <p class="text-gray-600">Phones: ${applicant.contactInfo.phones.filter(p => p).join(', ') || 'Not provided'}</p>
-                                    <p class="text-gray-600">Preferred Phone: ${applicant.contactInfo.preferred_phone_no || 'Not provided'}</p>
                                 </div>
                                 
-                                <!-- Addresses -->
-                                <div class="summary-item">
-                                    <h4 class="font-medium text-gray-700">Addresses</h4>
-                                    ${applicant.contactInfo.addresses.map((addr, idx) => `
-                                        <div class="mb-2">
-                                            <p class="text-gray-600 font-medium">Address ${idx + 1}:</p>
-                                            <p class="text-gray-600">${addr.line1 || ''} ${addr.line2 || ''}</p>
-                                            <p class="text-gray-600">${addr.city || ''}, ${addr.state || ''} ${addr.postalCode || ''}</p>
-                                        </div>
-                                    `).join('')}
-                                </div>
-                                
-                                <!-- Family Information -->
                                 <div class="summary-item">
                                     <h4 class="font-medium text-gray-700">Family Information</h4>
                                     <p class="text-gray-600">Relationship Status: ${applicant.familyInfo.relationshipStatus || 'Not provided'}</p>
                                     <p class="text-gray-600">Family Members: ${applicant.familyInfo.familyMembers.length || '0'}</p>
-                                    <p class="text-gray-600">Has Relative in UK: ${applicant.familyInfo.hasRelativeInUK !== null ? (applicant.familyInfo.hasRelativeInUK ? 'Yes' : 'No') : 'Not provided'}</p>
                                 </div>
                                 
-                                <!-- Employment Information -->
+                                <div class="summary-item">
+                                    <h4 class="font-medium text-gray-700">Accommodation Details</h4>
+                                    <p class="text-gray-600">Has Accommodation: ${applicant.accommodationDetails.hasAddress !== null ? (applicant.accommodationDetails.hasAddress ? 'Yes' : 'No') : 'Not provided'}</p>
+                                    ${applicant.accommodationDetails.hasAddress === false ? `
+                                        <p class="text-gray-600">Plans: ${applicant.accommodationDetails.custom_accommodation || 'Not provided'}</p>
+                                    ` : ''}
+                                </div>
+                                
                                 <div class="summary-item">
                                     <h4 class="font-medium text-gray-700">Employment Information</h4>
                                     <p class="text-gray-600">Employment Status: ${applicant.employmentInfo.employmentStatus || 'Not provided'}</p>
-                                    ${applicant.employmentInfo.employmentStatus === 'self-employed' ? `
-                                        <p class="text-gray-600">Job: ${applicant.employmentInfo.jobDetails || 'Not provided'}</p>
-                                        <p class="text-gray-600">Yearly Earning: ${applicant.employmentInfo.yearlyEarning || 'Not provided'}</p>
-                                    ` : ''}
-                                    ${applicant.employmentInfo.employmentStatus === 'employed' ? `
-                                        <p class="text-gray-600">Job Title: ${applicant.employmentInfo.jobTitle || 'Not provided'}</p>
-                                        <p class="text-gray-600">Monthly Income: ${applicant.employmentInfo.monthlyIncome || 'Not provided'}</p>
-                                    ` : ''}
                                 </div>
                                 
-                                <!-- Travel Information -->
                                 <div class="summary-item">
                                     <h4 class="font-medium text-gray-700">Travel Information</h4>
                                     <p class="text-gray-600">Main Reason: ${applicant.travelInfo.visitMainReason || 'Not provided'}</p>
@@ -2234,13 +2198,6 @@ if ($pnr) {
                                     <p class="text-gray-600">Departure Date: ${applicant.travelInfo.leaveDate || 'Not provided'}</p>
                                 </div>
                                 
-                                <!-- Travel History -->
-                                <div class="summary-item">
-                                    <h4 class="font-medium text-gray-700">Travel History</h4>
-                                    <p class="text-gray-600">${applicant.travelHistory.history || 'Not provided'}</p>
-                                </div>
-                                
-                                <!-- Application Status -->
                                 <div class="summary-item md:col-span-2">
                                     <h4 class="font-medium text-gray-700">Application Status</h4>
                                     <p class="text-gray-600">Completed: ${applicant.completed ? 'Yes' : 'No'}</p>
@@ -2255,7 +2212,6 @@ if ($pnr) {
             return summaryHTML;
         }
 
-        // Download JSON data
         function downloadJSON() {
             const applicationData = {
                 pnr: state.pnr,
@@ -2273,7 +2229,6 @@ if ($pnr) {
             link.click();
         }
 
-        // Save application to localStorage
         function saveToLocalStorage() {
             const applicationData = {
                 pnr: state.pnr,
@@ -2288,15 +2243,12 @@ if ($pnr) {
             localStorage.setItem('ukVisaApplication-'+state.pnr, JSON.stringify(applicationData));
         }
 
-        // Save and exit the application
         function saveAndExit() {
             saveToLocalStorage();
             alert('Your application has been saved. You can return later to complete it.');
         }
 
-        // Submit the application
         function submitApplication() {
-            // Prepare data for API
             const applicationData = {
                 pnr: state.pnr,
                 nameOfApplicant: state.applicants[0].passportInfo.pp_family_name,
@@ -2305,8 +2257,9 @@ if ($pnr) {
                 status: "completed",
                 timestamp: new Date().toISOString()
             };
+
+            console.log(applicationData);
             
-            // Submit to server
             fetch('/server/submit-application.php', {
                 method: 'POST',
                 headers: {
@@ -2323,15 +2276,12 @@ if ($pnr) {
             .then(data => {
                 alert(`Application with PNR ${state.pnr} submitted successfully!`);
                 
-                // Clear localStorage
                 localStorage.removeItem('ukVisaApplication-'+state.pnr);
                 
-                // Reset the form
                 document.getElementById('initial-screen').classList.remove('hidden');
                 document.getElementById('multi-applicant-form').classList.add('hidden');
                 document.getElementById('saved-application-section').classList.add('hidden');
                 
-                // Reset state
                 state.currentApplicant = 0;
                 state.currentStep = 0;
                 state.totalApplicants = 1;
@@ -2339,10 +2289,8 @@ if ($pnr) {
                 state.applicants = [];
                 initializeApplicant(0);
                 
-                // Reset form
                 document.getElementById('applicant-count').value = '1';
                 
-                // Redirect to application form
                 window.location.href = 'application-form.php';
             })
             .catch(error => {

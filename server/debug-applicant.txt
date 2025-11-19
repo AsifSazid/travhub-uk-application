@@ -1,11 +1,13 @@
 Array
 (
-    [id] => TRH-UK-PNR-528890K213-APPT-003
-    [pnr] => TRH-UK-PNR-528890K213
-    [user_pnr] => TRH-UK-PNR-528890K213-APPT-003
+    [id] => TRH-UK-PNR-782072K415-APPT-001
+    [pnr] => TRH-UK-PNR-782072K415
+    [user_pnr] => TRH-UK-PNR-782072K415-APPT-001
     [completed] => 1
     [passportInfo] => Array
         (
+            [pp_given_name] => Shahanur 
+            [pp_family_name] => Islam
         )
 
     [nidInfo] => Array
@@ -29,14 +31,14 @@ Array
                 (
                     [0] => Array
                         (
-                            [city] => 
                             [line1] => 
                             [line2] => 
+                            [city] => 
                             [state] => 
-                            [livedInFor] => 
                             [postalCode] => 
-                            [ownershipStatus] => 
                             [isCorrespondence] => 
+                            [livedInFor] => 
+                            [ownershipStatus] => 
                         )
 
                 )
@@ -46,6 +48,7 @@ Array
 
     [familyInfo] => Array
         (
+            [relationshipStatus] => 
             [familyMembers] => Array
                 (
                 )
@@ -53,18 +56,18 @@ Array
             [hasRelativeInUK] => 
             [relativeAddress] => Array
                 (
-                    [city] => 
                     [line1] => 
                     [line2] => 
+                    [city] => 
                     [state] => 
                     [postalCode] => 
                 )
 
-            [relationshipStatus] => 
         )
 
     [accommodationDetails] => Array
         (
+            [hasAddress] => 
             [hotels] => Array
                 (
                     [0] => 
@@ -74,58 +77,59 @@ Array
                 (
                     [0] => Array
                         (
-                            [city] => 
                             [line1] => 
                             [line2] => 
+                            [city] => 
                             [state] => 
                             [postalCode] => 
                         )
 
                 )
 
-            [hasAddress] => 
+            [custom_accommodation] => 
         )
 
     [employmentInfo] => Array
         (
-            [jobTitle] => 
-            [jobDetails] => 
-            [monthlyIncome] => 
-            [yearlyEarning] => 
-            [jobDescription] => 
             [employmentStatus] => 
+            [jobDetails] => 
+            [yearlyEarning] => 
+            [jobTitle] => 
+            [monthlyIncome] => 
+            [jobDescription] => 
         )
 
     [incomeExpenditure] => Array
         (
             [haveSavings] => 
+            [planningToExpense] => 
+            [totalExpenseInBd] => 
             [paymentInfo] => Array
                 (
                     [0] => Array
                         (
+                            [currency] => 
                             [amount] => 
                             [paidFor] => 
-                            [currency] => 
                         )
 
                 )
 
-            [totalExpenseInBd] => 
-            [planningToExpense] => 
         )
 
     [travelInfo] => Array
         (
-            [leaveDate] => 
+            [visitMainReason] => 
+            [businessReasonToVisitUk] => 
+            [tourismReasonToVisitUk] => 
             [activities] => 
             [arrivalDate] => 
-            [visitMainReason] => 
-            [tourismReasonToVisitUk] => 
-            [businessReasonToVisitUk] => 
+            [leaveDate] => 
         )
 
     [travelHistory] => Array
         (
+            [history] => 
         )
 
 )
