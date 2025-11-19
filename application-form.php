@@ -1523,6 +1523,26 @@ if ($pnr) {
                     </div>
                     
                     <div id="employment-details">
+                        ${applicant.employmentInfo.employmentStatus === 'business-man' ? `
+                            <div>
+                                <label class="block text-gray-700 mb-2">What is your business title? *</label>
+                                <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                       value="${applicant.employmentInfo.businessTitle || ''}" 
+                                       onchange="updateApplicantData('employmentInfo', 'businessTitle', this.value)" required>
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 mb-2">What is your business details? *</label>
+                                <textarea type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                       onchange="updateApplicantData('employmentInfo', 'businessDetails', this.value)" required>${applicant.employmentInfo.businessDetails || ''}</textarea>
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 mb-2">How much do you earn from this business in a year? *</label>
+                                <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                       value="${applicant.employmentInfo.yearlyEarning || ''}" 
+                                       onchange="updateApplicantData('employmentInfo', 'yearlyEarning', this.value)" required>
+                            </div>
+                        ` : ''}
+
                         ${applicant.employmentInfo.employmentStatus === 'self-employed' ? `
                             <div>
                                 <label class="block text-gray-700 mb-2">What is your job? *</label>
@@ -1726,7 +1746,7 @@ if ($pnr) {
                 <div class="space-y-6">
                     <div>
                         <label class="block text-gray-700 mb-2">Travel History</label>
-                        <textarea class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" rows="6"
+                        <textarea class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" rows="25"
                                   placeholder="Please provide details of your travel history including countries visited, dates, and purpose of visit"
                                   onchange="updateApplicantData('travelHistory', 'history', this.value)">${applicant.travelHistory.history || ''}</textarea>
                         <p class="text-sm text-gray-500 mt-1">Provide details of countries visited, dates, and purpose of visit</p>
