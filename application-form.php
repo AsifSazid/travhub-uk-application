@@ -52,6 +52,7 @@ if ($pnr) {
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -62,81 +63,88 @@ if ($pnr) {
         .fade-in {
             animation: fadeIn 0.5s ease-in-out;
         }
-        
+
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
-        
+
         .step {
             display: none;
         }
-        
+
         .step.active {
             display: block;
         }
-        
+
         .tab {
             cursor: pointer;
             transition: all 0.3s ease;
         }
-        
+
         .tab.active {
             background-color: #3b82f6;
             color: white;
         }
-        
+
         .progress-bar {
             transition: width 0.5s ease-in-out;
         }
-        
+
         .form-section {
             border-left: 4px solid #3b82f6;
         }
-        
+
         .summary-item {
             border-bottom: 1px solid #e5e7eb;
             padding: 12px 0;
         }
-        
+
         .applicant-progress {
             height: 6px;
             border-radius: 3px;
         }
-        
+
         .applicant-complete {
             background-color: #10b981;
         }
-        
+
         .applicant-incomplete {
             background-color: #d1d5db;
         }
-        
+
         .step-nav-item {
             cursor: pointer;
             transition: all 0.3s ease;
             border-left: 3px solid transparent;
         }
-        
+
         .step-nav-item:hover {
             background-color: #f3f4f6;
         }
-        
+
         .step-nav-item.active {
             border-left-color: #3b82f6;
             background-color: #eff6ff;
         }
-        
+
         .step-nav-item.completed .step-icon {
             background-color: #10b981;
             color: white;
         }
-        
+
         .step-nav-item.current .step-icon {
             background-color: #3b82f6;
             color: white;
         }
-        
+
         .dynamic-field-group {
             border: 1px solid #e5e7eb;
             border-radius: 0.5rem;
@@ -144,7 +152,7 @@ if ($pnr) {
             margin-bottom: 1rem;
             background-color: #f9fafb;
         }
-        
+
         .address-group {
             border: 1px solid #e5e7eb;
             border-radius: 0.5rem;
@@ -152,7 +160,7 @@ if ($pnr) {
             margin-bottom: 1rem;
             background-color: #f9fafb;
         }
-        
+
         .family-member-group {
             border: 1px solid #e5e7eb;
             border-radius: 0.5rem;
@@ -160,7 +168,7 @@ if ($pnr) {
             margin-bottom: 1rem;
             background-color: #f9fafb;
         }
-        
+
         .travel-history-group {
             border: 1px solid #e5e7eb;
             border-radius: 0.5rem;
@@ -170,6 +178,7 @@ if ($pnr) {
         }
     </style>
 </head>
+
 <body class="bg-gray-50 min-h-screen">
     <div class="container mx-auto px-4 py-8 max-w-7xl">
         <!-- Header -->
@@ -202,7 +211,7 @@ if ($pnr) {
                     <button id="start-application" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition duration-300">
                         Start Application
                     </button>
-                    
+
                     <!-- Load Saved Application -->
                     <div id="saved-application-section" class="mt-8 p-4 bg-yellow-50 rounded-lg border border-yellow-200 hidden">
                         <h3 class="font-medium text-yellow-800 mb-2">Saved Application Found</h3>
@@ -308,6 +317,35 @@ if ($pnr) {
     </div>
 
     <script>
+        // তারিখ validation ফাংশন
+        function isValidDate(dateString) {
+            // DD/MM/YYYY format validate
+            const pattern = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+            if (!pattern.test(dateString)) return false;
+
+            const [_, day, month, year] = pattern.exec(dateString);
+            const date = new Date(year, month - 1, day);
+
+            return date.getDate() == day &&
+                date.getMonth() == month - 1 &&
+                date.getFullYear() == year;
+        }
+
+        // DD/MM/YYYY থেকে YYYY-MM-DD তে convert
+        function convertToISO(dateString) {
+            if (!isValidDate(dateString)) return '';
+
+            const [day, month, year] = dateString.split('/');
+            return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        }
+
+        // YYYY-MM-DD থেকে DD/MM/YYYY তে convert
+        function convertToDisplay(isoDate) {
+            if (!isoDate) return '';
+
+            const [year, month, day] = isoDate.split('-');
+            return `${day}/${month}/${year}`;
+        }
         // Application state
         const state = {
             currentApplicant: 0,
@@ -316,49 +354,48 @@ if ($pnr) {
             totalApplicants: 1,
             pnr: '',
             applicants: [],
-            steps: [
-                { 
-                    name: 'Passport Information', 
+            steps: [{
+                    name: 'Passport Information',
                     icon: 'fa-passport',
                     description: 'Provide your passport details'
                 },
-                { 
-                    name: 'NID Information', 
+                {
+                    name: 'NID Information',
                     icon: 'fa-id-card',
                     description: 'National Identity Card details'
                 },
-                { 
-                    name: 'Contact Information', 
+                {
+                    name: 'Contact Information',
                     icon: 'fa-address-book',
                     description: 'Your contact details'
                 },
-                { 
-                    name: 'Family Information', 
+                {
+                    name: 'Family Information',
                     icon: 'fa-users',
                     description: 'Information about your family'
                 },
-                { 
-                    name: 'Accommodation Details', 
+                {
+                    name: 'Accommodation Details',
                     icon: 'fa-hotel',
                     description: 'Where you will stay in the UK'
                 },
-                { 
-                    name: 'Employment Information', 
+                {
+                    name: 'Employment Information',
                     icon: 'fa-briefcase',
                     description: 'Your employment details'
                 },
-                { 
-                    name: 'Income & Expenditure', 
+                {
+                    name: 'Income & Expenditure',
                     icon: 'fa-chart-line',
                     description: 'Financial information'
                 },
-                { 
-                    name: 'Travel Information', 
+                {
+                    name: 'Travel Information',
                     icon: 'fa-plane',
                     description: 'Your travel plans'
                 },
-                { 
-                    name: 'Travel History', 
+                {
+                    name: 'Travel History',
                     icon: 'fa-globe-americas',
                     description: 'Previous travel history'
                 }
@@ -369,7 +406,7 @@ if ($pnr) {
         function checkURLParameters() {
             const urlParams = new URLSearchParams(window.location.search);
             const pnr = urlParams.get('pnr');
-            
+
             if (pnr) {
                 // FIRST: Try to load from DATABASE (if PHP found data)
                 <?php if ($dbApplicationData): ?>
@@ -400,27 +437,27 @@ if ($pnr) {
                 state.applicants = applicationData.applicants;
                 state.currentApplicant = applicationData.currentApplicant || 0;
                 state.currentStep = applicationData.currentStep || 0;
-                
+
                 // Hide initial screen and show form directly
                 document.getElementById('initial-screen').classList.add('hidden');
                 document.getElementById('multi-applicant-form').classList.remove('hidden');
-                
+
                 // Display PNR
                 document.getElementById('pnr-display').textContent = state.pnr;
                 document.getElementById('total-applicants').textContent = state.totalApplicants;
-                
+
                 // Generate tabs
                 generateTabs();
-                
+
                 // Generate step navigation
                 generateStepNavigation();
-                
+
                 // Generate form steps for the current applicant
                 generateFormSteps();
-                
+
                 // Update UI
                 updateUI();
-                
+
                 return true;
             }
             return false;
@@ -428,11 +465,11 @@ if ($pnr) {
 
         // Load specific application by PNR (for localStorage)
         function loadApplicationByPNR(pnr) {
-            const savedApplication = localStorage.getItem('ukVisaApplication-'+pnr);
-            
+            const savedApplication = localStorage.getItem('ukVisaApplication-' + pnr);
+
             if (savedApplication) {
                 const applicationData = JSON.parse(savedApplication);
-                
+
                 if (applicationData.pnr === pnr) {
                     // Restore state from saved data
                     state.totalApplicants = applicationData.totalApplicants;
@@ -440,31 +477,31 @@ if ($pnr) {
                     state.applicants = applicationData.applicants;
                     state.currentApplicant = applicationData.currentApplicant || 0;
                     state.currentStep = applicationData.currentStep || 0;
-                    
+
                     // Hide initial screen and show form directly
                     document.getElementById('initial-screen').classList.add('hidden');
                     document.getElementById('multi-applicant-form').classList.remove('hidden');
-                    
+
                     // Display PNR
                     document.getElementById('pnr-display').textContent = state.pnr;
                     document.getElementById('total-applicants').textContent = state.totalApplicants;
-                    
+
                     // Generate tabs
                     generateTabs();
-                    
+
                     // Generate step navigation
                     generateStepNavigation();
-                    
+
                     // Generate form steps for the current applicant
                     generateFormSteps();
-                    
+
                     // Update UI
                     updateUI();
-                    
+
                     return true;
                 }
             }
-            
+
             return false;
         }
 
@@ -475,14 +512,14 @@ if ($pnr) {
 
             for (let i = 0; i < localStorage.length; i++) {
                 const key = localStorage.key(i);
-                
+
                 if (key.startsWith('ukVisaApplication-')) {
                     try {
                         const storedValue = JSON.parse(localStorage.getItem(key));
-                        
+
                         if (storedValue && storedValue.timestamp) {
                             const ts = new Date(storedValue.timestamp).getTime();
-                            
+
                             if (ts > latestTimestamp) {
                                 latestTimestamp = ts;
                                 lastApplication = storedValue;
@@ -515,10 +552,10 @@ if ($pnr) {
             document.getElementById('back-to-dashboard').addEventListener('click', function() {
                 window.location.href = 'index.php';
             });
-            
+
             // Check for URL parameters first - WITH DB PRIORITY
             checkURLParameters();
-            
+
             // Check for saved applications in localStorage (for initial screen)
             checkForSavedApplication();
         });
@@ -561,35 +598,35 @@ if ($pnr) {
         function startApplication() {
             const applicantCount = parseInt(document.getElementById('applicant-count').value);
             state.totalApplicants = applicantCount;
-            
+
             // Generate PNR
             state.pnr = generatePNR();
-            
+
             // Initialize all applicants
             for (let i = 0; i < applicantCount; i++) {
                 initializeApplicant(i);
             }
-            
+
             // Hide initial screen and show form
             document.getElementById('initial-screen').classList.add('hidden');
             document.getElementById('multi-applicant-form').classList.remove('hidden');
-            
+
             // Display PNR
             document.getElementById('pnr-display').textContent = state.pnr;
             document.getElementById('total-applicants').textContent = state.totalApplicants;
-            
+
             // Generate tabs
             generateTabs();
-            
+
             // Generate step navigation
             generateStepNavigation();
-            
+
             // Generate form steps for the first applicant
             generateFormSteps();
-            
+
             // Update UI
             updateUI();
-            
+
             // Save initial state
             saveToLocalStorage();
         }
@@ -692,16 +729,16 @@ if ($pnr) {
         function generateTabs() {
             const tabsContainer = document.getElementById('applicant-tabs');
             tabsContainer.innerHTML = '';
-            
+
             for (let i = 0; i < state.totalApplicants; i++) {
                 const applicant = state.applicants[i];
                 const completedSteps = countCompletedSteps(i);
                 const progressPercentage = (completedSteps / state.totalSteps) * 100;
-                
+
                 const tab = document.createElement('div');
                 tab.className = `tab py-3 px-6 text-sm font-medium flex flex-col items-center min-w-32 ${i === state.currentApplicant ? 'active bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700'}`;
                 tab.dataset.applicant = i;
-                
+
                 tab.innerHTML = `
                     <div class="flex justify-between w-full items-center mb-1">
                         <span>Applicant ${i + 1} &nbsp;</span> 
@@ -712,11 +749,11 @@ if ($pnr) {
                     </div>
                     <div class="text-xs mt-1">${completedSteps}/${state.totalSteps}</div>
                 `;
-                
+
                 tab.addEventListener('click', function() {
                     switchApplicant(parseInt(this.dataset.applicant));
                 });
-                
+
                 tabsContainer.appendChild(tab);
             }
         }
@@ -725,15 +762,15 @@ if ($pnr) {
         function generateStepNavigation() {
             const stepNavContainer = document.getElementById('step-navigation');
             stepNavContainer.innerHTML = '';
-            
+
             state.steps.forEach((step, index) => {
                 const isCompleted = isStepCompleted(index);
                 const isCurrent = index === state.currentStep;
-                
+
                 const stepNavItem = document.createElement('div');
                 stepNavItem.className = `step-nav-item p-3 rounded-lg ${isCurrent ? 'active current' : ''} ${isCompleted ? 'completed' : ''}`;
                 stepNavItem.dataset.step = index;
-                
+
                 stepNavItem.innerHTML = `
                     <div class="flex items-center">
                         <div class="step-icon w-8 h-8 rounded-full flex items-center justify-center mr-3 ${isCompleted ? 'bg-green-500 text-white' : isCurrent ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-600'}">
@@ -746,12 +783,12 @@ if ($pnr) {
                         ${isCompleted ? '<i class="fas fa-check text-green-500 ml-2"></i>' : ''}
                     </div>
                 `;
-                
+
                 stepNavItem.addEventListener('click', function() {
                     const stepIndex = parseInt(this.dataset.step);
                     jumpToStep(stepIndex);
                 });
-                
+
                 stepNavContainer.appendChild(stepNavItem);
             });
         }
@@ -759,18 +796,18 @@ if ($pnr) {
         // Check if a step is completed for the current applicant
         function isStepCompleted(stepIndex) {
             const applicant = state.applicants[state.currentApplicant];
-            
-            switch(stepIndex) {
+
+            switch (stepIndex) {
                 case 0: // Passport Information
-                    return applicant.passportInfo.pp_given_name && 
-                           applicant.passportInfo.pp_family_name &&
-                           applicant.passportInfo.pp_number;
+                    return applicant.passportInfo.pp_given_name &&
+                        applicant.passportInfo.pp_family_name &&
+                        applicant.passportInfo.pp_number;
                 case 1: // NID Information
                     return applicant.nidInfo.has_nid !== null;
                 case 2: // Contact Information
-                    return applicant.contactInfo.emails[0] && 
-                           applicant.contactInfo.phones[0] &&
-                           applicant.contactInfo.addresses[0].line1;
+                    return applicant.contactInfo.emails[0] &&
+                        applicant.contactInfo.phones[0] &&
+                        applicant.contactInfo.addresses[0].line1;
                 case 3: // Family Information
                     return applicant.familyInfo.relationshipStatus;
                 case 4: // Accommodation Details
@@ -781,7 +818,7 @@ if ($pnr) {
                     return applicant.incomeExpenditure.planningToExpense;
                 case 7: // Travel Information
                     return applicant.travelInfo.visitMainReason &&
-                           applicant.travelInfo.arrivalDate;
+                        applicant.travelInfo.arrivalDate;
                 case 8: // Travel History
                     return true;
                 default:
@@ -802,31 +839,31 @@ if ($pnr) {
         function countCompletedSteps(applicantIndex) {
             const applicant = state.applicants[applicantIndex];
             let count = 0;
-            
+
             for (let i = 0; i < state.totalSteps; i++) {
                 if (isStepCompletedForApplicant(applicantIndex, i)) {
                     count++;
                 }
             }
-            
+
             return count;
         }
 
         // Check if a step is completed for a specific applicant
         function isStepCompletedForApplicant(applicantIndex, stepIndex) {
             const applicant = state.applicants[applicantIndex];
-            
-            switch(stepIndex) {
+
+            switch (stepIndex) {
                 case 0: // Passport Information
-                    return applicant.passportInfo.pp_given_name && 
-                           applicant.passportInfo.pp_family_name &&
-                           applicant.passportInfo.pp_number;
+                    return applicant.passportInfo.pp_given_name &&
+                        applicant.passportInfo.pp_family_name &&
+                        applicant.passportInfo.pp_number;
                 case 1: // NID Information
                     return applicant.nidInfo.has_nid !== null;
                 case 2: // Contact Information
-                    return applicant.contactInfo.emails[0] && 
-                           applicant.contactInfo.phones[0] &&
-                           applicant.contactInfo.addresses[0].line1;
+                    return applicant.contactInfo.emails[0] &&
+                        applicant.contactInfo.phones[0] &&
+                        applicant.contactInfo.addresses[0].line1;
                 case 3: // Family Information
                     return applicant.familyInfo.relationshipStatus;
                 case 4: // Accommodation Details
@@ -837,7 +874,7 @@ if ($pnr) {
                     return applicant.incomeExpenditure.planningToExpense;
                 case 7: // Travel Information
                     return applicant.travelInfo.visitMainReason &&
-                           applicant.travelInfo.arrivalDate;
+                        applicant.travelInfo.arrivalDate;
                 case 8: // Travel History
                     return true;
                 default:
@@ -859,7 +896,7 @@ if ($pnr) {
         function switchApplicant(applicantIndex) {
             state.currentApplicant = applicantIndex;
             state.currentStep = 0;
-            
+
             // Update tabs
             document.querySelectorAll('.tab').forEach((tab, index) => {
                 if (index === applicantIndex) {
@@ -870,16 +907,16 @@ if ($pnr) {
                     tab.classList.add('text-gray-500');
                 }
             });
-            
+
             // Regenerate form steps for the selected applicant
             generateFormSteps();
-            
+
             // Regenerate step navigation
             generateStepNavigation();
-            
+
             // Update UI
             updateUI();
-            
+
             // Save state
             saveToLocalStorage();
         }
@@ -888,22 +925,22 @@ if ($pnr) {
         function generateFormSteps() {
             const formStepsContainer = document.getElementById('form-steps');
             formStepsContainer.innerHTML = '';
-            
+
             state.steps.forEach((step, index) => {
                 const stepElement = document.createElement('div');
                 stepElement.className = `step fade-in ${index === state.currentStep ? 'active' : ''}`;
                 stepElement.id = `step-${index}`;
-                
+
                 stepElement.innerHTML = `
                     <h2 class="text-xl font-bold text-gray-800 mb-6">${step.name} - Applicant ${state.currentApplicant + 1}</h2>
                     <div class="bg-gray-50 p-6 rounded-lg form-section">
                         ${generateStepContent(index)}
                     </div>
                 `;
-                
+
                 formStepsContainer.appendChild(stepElement);
             });
-            
+
             // Update the total steps display
             document.getElementById('total-steps').textContent = state.totalSteps;
         }
@@ -911,35 +948,35 @@ if ($pnr) {
         // Generate content for each step
         function generateStepContent(stepIndex) {
             const applicant = state.applicants[state.currentApplicant];
-            
-            switch(stepIndex) {
+
+            switch (stepIndex) {
                 case 0: // Passport Information
                     return generatePassportInfoStep(applicant);
-                    
+
                 case 1: // NID Information
                     return generateNIDInfoStep(applicant);
-                    
+
                 case 2: // Contact Information
                     return generateContactInfoStep(applicant);
-                    
+
                 case 3: // Family Information
                     return generateFamilyInfoStep(applicant);
-                    
+
                 case 4: // Accommodation Details
                     return generateAccommodationDetailsStep(applicant);
-                    
+
                 case 5: // Employment Information
                     return generateEmploymentInfoStep(applicant);
-                    
+
                 case 6: // Income & Expenditure
                     return generateIncomeExpenditureStep(applicant);
-                    
+
                 case 7: // Travel Information
                     return generateTravelInfoStep(applicant);
-                    
+
                 case 8: // Travel History
                     return generateTravelHistoryStep(applicant);
-                    
+
                 default:
                     return '<p>Step content not defined.</p>';
             }
@@ -979,9 +1016,13 @@ if ($pnr) {
                     </div>
                     <div>
                         <label class="block text-gray-700 mb-2">Date of Birth *</label>
-                        <input type="date" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                               value="${applicant.passportInfo.pp_dob || ''}" 
-                               onchange="updateApplicantData('passportInfo', 'pp_dob', this.value)" required>
+                        <input type="text" 
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 date-input" 
+                            value="${applicant.passportInfo.pp_dob ? convertToDisplay(applicant.passportInfo.pp_dob) : ''}" 
+                            onchange="handleDateChange('passportInfo', 'pp_dob', this.value)"
+                            placeholder="DD/MM/YYYY"
+                            required>
+                        <p class="text-xs text-gray-500 mt-1">Format: DD/MM/YYYY</p>
                     </div>
                     <div>
                         <label class="block text-gray-700 mb-2">Passport Number *</label>
@@ -997,15 +1038,21 @@ if ($pnr) {
                     </div>
                     <div>
                         <label class="block text-gray-700 mb-2">Issue Date *</label>
-                        <input type="date" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                               value="${applicant.passportInfo.pp_issue_date || ''}" 
-                               onchange="updateApplicantData('passportInfo', 'pp_issue_date', this.value)" required>
+                        <input type="text" 
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                            value="${applicant.passportInfo.pp_issue_date ? convertToDisplay(applicant.passportInfo.pp_issue_date) : ''}" 
+                            onchange="handleDateChange('passportInfo', 'pp_issue_date', this.value)"
+                            placeholder="DD/MM/YYYY"
+                            required>
                     </div>
                     <div>
                         <label class="block text-gray-700 mb-2">Expiry Date *</label>
-                        <input type="date" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                               value="${applicant.passportInfo.pp_expiry_date || ''}" 
-                               onchange="updateApplicantData('passportInfo', 'pp_expiry_date', this.value)" required>
+                        <input type="text" 
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                            value="${applicant.passportInfo.pp_expiry_date ? convertToDisplay(applicant.passportInfo.pp_expiry_date) : ''}" 
+                            onchange="handleDateChange('passportInfo', 'pp_expiry_date', this.value)"
+                            placeholder="DD/MM/YYYY"
+                            required>
                     </div>
                 </div>
                 <p class="text-sm text-gray-500 mt-4">* Required fields</p>
@@ -1050,9 +1097,12 @@ if ($pnr) {
                             </div>
                             <div>
                                 <label class="block text-gray-700 mb-2">Issue Date (If applicable)</label>
-                                <input type="date" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                                       value="${applicant.nidInfo.nid_isue_date || ''}" 
-                                       onchange="updateApplicantData('nidInfo', 'nid_isue_date', this.value)">
+                                <input type="text" 
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                    value="${applicant.nidInfo.nid_isue_date ? convertToDisplay(applicant.nidInfo.nid_isue_date) : ''}" 
+                                    onchange="handleDateChange('nidInfo', 'nid_isue_date', this.value)"
+                                    placeholder="DD/MM/YYYY"
+                                    required>
                             </div>
                         </div>
                     </div>
@@ -1081,7 +1131,7 @@ if ($pnr) {
                     </div>
                 `;
             });
-            
+
             let phonesHTML = '';
             applicant.contactInfo.phones.forEach((phone, index) => {
                 phonesHTML += `
@@ -1100,7 +1150,7 @@ if ($pnr) {
                     </div>
                 `;
             });
-            
+
             let addressesHTML = '';
             applicant.contactInfo.addresses.forEach((address, index) => {
                 addressesHTML += `
@@ -1173,7 +1223,7 @@ if ($pnr) {
                     </div>
                 `;
             });
-            
+
             // Generate options for preferred phone
             let phoneOptionsHTML = '';
             applicant.contactInfo.phones.forEach((phone, index) => {
@@ -1181,7 +1231,7 @@ if ($pnr) {
                     phoneOptionsHTML += `<option value="${phone}" ${applicant.contactInfo.preferred_phone_no === phone ? 'selected' : ''}>${phone}</option>`;
                 }
             });
-            
+
             return `
                 <div class="space-y-6">
                     <div>
@@ -1266,6 +1316,12 @@ if ($pnr) {
                                 <input type="date" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
                                        value="${member.dob || ''}" 
                                        onchange="updateFamilyMemberData(${index}, 'dob', this.value)">
+                                <input type="text" 
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                    value="${member.dob ? convertToDisplay(member.dob) : ''}" 
+                                    onchange="handleDateChange('member', 'dob', this.value)"
+                                    placeholder="DD/MM/YYYY"
+                                    required>
                             </div>
                             <div>
                                 <label class="block text-gray-700 mb-2">Country of Nationality</label>
@@ -1299,7 +1355,7 @@ if ($pnr) {
                     </div>
                 `;
             });
-            
+
             return `
                 <div class="space-y-6">
                     <div>
@@ -1401,7 +1457,7 @@ if ($pnr) {
             let addressesHTML = '';
             applicant.accommodationDetails.addresses.forEach((address, index) => {
                 const hotelValue = applicant.accommodationDetails.hotels[index] || '';
-                
+
                 addressesHTML += `
                     <div class="address-group">
                         <div class="flex justify-between items-center mb-4">
@@ -1453,7 +1509,7 @@ if ($pnr) {
                     </div>
                 `;
             });
-            
+
             return `
                 <div class="space-y-6">
                     <div>
@@ -1622,7 +1678,7 @@ if ($pnr) {
                     `;
                 });
             }
-            
+
             return `
                 <div class="space-y-6">
                     <div>
@@ -1725,15 +1781,21 @@ if ($pnr) {
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label class="block text-gray-700 mb-2">Date you plan to arrive in the UK *</label>
-                            <input type="date" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                                   value="${applicant.travelInfo.arrivalDate || ''}" 
-                                   onchange="updateApplicantData('travelInfo', 'arrivalDate', this.value)" required>
+                            <input type="text" 
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                value="${applicant.travelInfo.arrivalDate ? convertToDisplay(applicant.travelInfo.arrivalDate) : ''}" 
+                                onchange="handleDateChange('travelInfo', 'arrivalDate', this.value)"
+                                placeholder="DD/MM/YYYY"
+                                required>
                         </div>
                         <div>
                             <label class="block text-gray-700 mb-2">Date you plan to leave the UK *</label>
-                            <input type="date" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                                   value="${applicant.travelInfo.leaveDate || ''}" 
-                                   onchange="updateApplicantData('travelInfo', 'leaveDate', this.value)" required>
+                            <input type="text" 
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                value="${applicant.travelInfo.leaveDate ? convertToDisplay(applicant.travelInfo.leaveDate) : ''}" 
+                                onchange="handleDateChange('travelInfo', 'leaveDate', this.value)"
+                                placeholder="DD/MM/YYYY"
+                                required>
                         </div>
                     </div>
                 </div>
@@ -1764,7 +1826,7 @@ if ($pnr) {
             if (!applicant.accommodationDetails.hotels) {
                 applicant.accommodationDetails.hotels = [];
             }
-            
+
             applicant.accommodationDetails.addresses.push({
                 line1: '',
                 line2: '',
@@ -1806,7 +1868,7 @@ if ($pnr) {
         // ========== CONTACT RELATED FUNCTIONS ==========
         function addContactField(type) {
             const applicant = state.applicants[state.currentApplicant];
-            
+
             if (type === 'emails') {
                 applicant.contactInfo.emails.push('');
             } else if (type === 'phones') {
@@ -1823,14 +1885,14 @@ if ($pnr) {
                     ownershipStatus: ''
                 });
             }
-            
+
             generateFormSteps();
             saveToLocalStorage();
         }
 
         function removeContactField(type, index) {
             const applicant = state.applicants[state.currentApplicant];
-            
+
             if (type === 'emails') {
                 applicant.contactInfo.emails.splice(index, 1);
             } else if (type === 'phones') {
@@ -1838,7 +1900,7 @@ if ($pnr) {
             } else if (type === 'addresses') {
                 applicant.contactInfo.addresses.splice(index, 1);
             }
-            
+
             generateFormSteps();
             saveToLocalStorage();
         }
@@ -1871,7 +1933,7 @@ if ($pnr) {
                 travellingUK: false,
                 passportNo: ''
             });
-            
+
             generateFormSteps();
             saveToLocalStorage();
         }
@@ -1879,7 +1941,7 @@ if ($pnr) {
         function removeFamilyMember(index) {
             const applicant = state.applicants[state.currentApplicant];
             applicant.familyInfo.familyMembers.splice(index, 1);
-            
+
             generateFormSteps();
             saveToLocalStorage();
         }
@@ -1887,7 +1949,7 @@ if ($pnr) {
         function updateFamilyMemberData(memberIndex, field, value) {
             const applicant = state.applicants[state.currentApplicant];
             applicant.familyInfo.familyMembers[memberIndex][field] = value;
-            
+
             if (field === 'travellingUK') {
                 const passportSection = document.getElementById(`passport-section-${memberIndex}`);
                 if (passportSection) {
@@ -1900,7 +1962,7 @@ if ($pnr) {
                     }
                 }
             }
-            
+
             saveToLocalStorage();
         }
 
@@ -1921,7 +1983,7 @@ if ($pnr) {
                 amount: '',
                 paidFor: ''
             });
-            
+
             generateFormSteps();
             saveToLocalStorage();
         }
@@ -1929,7 +1991,7 @@ if ($pnr) {
         function removePaymentInfo(index) {
             const applicant = state.applicants[state.currentApplicant];
             applicant.incomeExpenditure.paymentInfo.splice(index, 1);
-            
+
             generateFormSteps();
             saveToLocalStorage();
         }
@@ -1943,7 +2005,7 @@ if ($pnr) {
         // ========== CORE APPLICATION FUNCTIONS ==========
         function updateApplicantData(category, field, value) {
             state.applicants[state.currentApplicant][category][field] = value;
-            
+
             // Special handling for NID info
             if (category === 'nidInfo' && field === 'has_nid') {
                 const nidDetails = document.getElementById('nid-details');
@@ -1955,27 +2017,27 @@ if ($pnr) {
                     nidDetails.classList.add('hidden');
                 }
             }
-            
+
             // Special handling for employment status
             if (category === 'employmentInfo' && field === 'employmentStatus') {
                 generateFormSteps();
             }
-            
+
             // Special handling for travel reason
             if (category === 'travelInfo' && field === 'visitMainReason') {
                 generateFormSteps();
             }
-            
+
             // Special handling for accommodation hasAddress
             if (category === 'accommodationDetails' && field === 'hasAddress') {
                 generateFormSteps();
             }
-            
+
             // Check if current applicant is now complete
             if (isApplicantComplete(state.currentApplicant)) {
                 state.applicants[state.currentApplicant].completed = true;
             }
-            
+
             generateStepNavigation();
             saveToLocalStorage();
             updateProgressIndicators();
@@ -1986,7 +2048,7 @@ if ($pnr) {
                 alert('Please fill in all required fields before proceeding.');
                 return;
             }
-            
+
             if (state.currentStep < state.totalSteps - 1) {
                 state.currentStep++;
                 generateFormSteps();
@@ -1994,19 +2056,19 @@ if ($pnr) {
                 updateUI();
             } else {
                 state.applicants[state.currentApplicant].completed = true;
-                
+
                 const allApplicantsComplete = state.applicants.every(applicant => applicant.completed);
-                
+
                 if (allApplicantsComplete) {
                     showSummary();
                 } else if (state.currentApplicant < state.totalApplicants - 1) {
                     document.getElementById('next-applicant-btn').classList.remove('hidden');
                     document.getElementById('next-btn').classList.add('hidden');
                 }
-                
+
                 updateProgressIndicators();
             }
-            
+
             saveToLocalStorage();
         }
 
@@ -2014,10 +2076,10 @@ if ($pnr) {
             if (state.currentApplicant < state.totalApplicants - 1) {
                 state.currentApplicant++;
                 state.currentStep = 0;
-                
+
                 document.getElementById('next-applicant-btn').classList.add('hidden');
                 document.getElementById('next-btn').classList.remove('hidden');
-                
+
                 switchApplicant(state.currentApplicant);
             } else {
                 showSummary();
@@ -2035,7 +2097,7 @@ if ($pnr) {
                 state.currentStep = state.totalSteps - 1;
                 switchApplicant(state.currentApplicant);
             }
-            
+
             saveToLocalStorage();
         }
 
@@ -2051,21 +2113,21 @@ if ($pnr) {
                     step.classList.remove('active');
                 }
             });
-            
+
             const individualProgressPercentage = ((state.currentStep + 1) / state.totalSteps) * 100;
             document.getElementById('individual-progress-bar').style.width = `${individualProgressPercentage}%`;
-            
+
             document.getElementById('current-step').textContent = state.currentStep + 1;
             document.getElementById('current-applicant-number').textContent = state.currentApplicant + 1;
-            
+
             if (state.currentStep === 0 && state.currentApplicant === 0) {
                 document.getElementById('prev-btn').classList.add('hidden');
             } else {
                 document.getElementById('prev-btn').classList.remove('hidden');
             }
-            
+
             const isSummaryStep = document.getElementById('form-steps').innerHTML.includes('Application Summary');
-            
+
             if (isSummaryStep) {
                 document.getElementById('submit-btn').classList.add('hidden');
                 document.getElementById('next-btn').classList.add('hidden');
@@ -2079,7 +2141,7 @@ if ($pnr) {
                 document.getElementById('next-btn').classList.remove('hidden');
                 document.getElementById('next-applicant-btn').classList.add('hidden');
             }
-            
+
             updateProgressIndicators();
         }
 
@@ -2088,14 +2150,14 @@ if ($pnr) {
             const overallProgressPercentage = (completedApplicants / state.totalApplicants) * 100;
             document.getElementById('overall-progress-bar').style.width = `${overallProgressPercentage}%`;
             document.getElementById('completed-applicants').textContent = completedApplicants;
-            
+
             generateTabs();
         }
 
         function showSummary() {
             const formStepsContainer = document.getElementById('form-steps');
             formStepsContainer.innerHTML = '';
-            
+
             const summaryElement = document.createElement('div');
             summaryElement.className = 'step active fade-in';
             summaryElement.innerHTML = `
@@ -2140,17 +2202,17 @@ if ($pnr) {
                     </div>
                 </div>
             `;
-            
+
             formStepsContainer.appendChild(summaryElement);
-            
+
             document.getElementById('download-json').addEventListener('click', downloadJSON);
             document.getElementById('submit-final').addEventListener('click', submitApplication);
-            
+
             document.getElementById('prev-btn').classList.remove('hidden');
             document.getElementById('next-btn').classList.add('hidden');
             document.getElementById('next-applicant-btn').classList.add('hidden');
             document.getElementById('submit-btn').classList.add('hidden');
-            
+
             document.getElementById('individual-progress-bar').style.width = '100%';
             document.getElementById('overall-progress-bar').style.width = '100%';
             document.getElementById('current-step').textContent = 'Summary';
@@ -2158,10 +2220,10 @@ if ($pnr) {
 
         function generateSummaryContent() {
             let summaryHTML = '';
-            
+
             for (let i = 0; i < state.totalApplicants; i++) {
                 const applicant = state.applicants[i];
-                
+
                 summaryHTML += `
                     <div class="mb-8 border border-gray-200 rounded-lg overflow-hidden">
                         <div class="bg-gray-100 px-4 py-3 border-b border-gray-200 flex justify-between items-center">
@@ -2228,7 +2290,7 @@ if ($pnr) {
                     </div>
                 `;
             }
-            
+
             return summaryHTML;
         }
 
@@ -2239,10 +2301,12 @@ if ($pnr) {
                 applicants: state.applicants,
                 timestamp: new Date().toISOString()
             };
-            
+
             const dataStr = JSON.stringify(applicationData, null, 2);
-            const dataBlob = new Blob([dataStr], {type: 'application/json'});
-            
+            const dataBlob = new Blob([dataStr], {
+                type: 'application/json'
+            });
+
             const link = document.createElement('a');
             link.href = URL.createObjectURL(dataBlob);
             link.download = `uk-visa-application-${state.pnr}.json`;
@@ -2259,8 +2323,8 @@ if ($pnr) {
                 currentStep: state.currentStep,
                 timestamp: new Date().toISOString()
             };
-            
-            localStorage.setItem('ukVisaApplication-'+state.pnr, JSON.stringify(applicationData));
+
+            localStorage.setItem('ukVisaApplication-' + state.pnr, JSON.stringify(applicationData));
         }
 
         function saveAndExit() {
@@ -2279,45 +2343,108 @@ if ($pnr) {
             };
 
             console.log(applicationData);
-            
+
             fetch('/server/submit-application.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(applicationData)
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(data => {
-                alert(`Application with PNR ${state.pnr} submitted successfully!`);
-                
-                localStorage.removeItem('ukVisaApplication-'+state.pnr);
-                
-                document.getElementById('initial-screen').classList.remove('hidden');
-                document.getElementById('multi-applicant-form').classList.add('hidden');
-                document.getElementById('saved-application-section').classList.add('hidden');
-                
-                state.currentApplicant = 0;
-                state.currentStep = 0;
-                state.totalApplicants = 1;
-                state.pnr = '';
-                state.applicants = [];
-                initializeApplicant(0);
-                
-                document.getElementById('applicant-count').value = '1';
-                
-                window.location.href = 'application-form.php';
-            })
-            .catch(error => {
-                console.error('Error submitting application:', error);
-                alert('There was an error submitting your application. Please try again.');
-            });
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(applicationData)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    alert(`Application with PNR ${state.pnr} submitted successfully!`);
+
+                    localStorage.removeItem('ukVisaApplication-' + state.pnr);
+
+                    document.getElementById('initial-screen').classList.remove('hidden');
+                    document.getElementById('multi-applicant-form').classList.add('hidden');
+                    document.getElementById('saved-application-section').classList.add('hidden');
+
+                    state.currentApplicant = 0;
+                    state.currentStep = 0;
+                    state.totalApplicants = 1;
+                    state.pnr = '';
+                    state.applicants = [];
+                    initializeApplicant(0);
+
+                    document.getElementById('applicant-count').value = '1';
+
+                    window.location.href = 'application-form.php';
+                })
+                .catch(error => {
+                    console.error('Error submitting application:', error);
+                    alert('There was an error submitting your application. Please try again.');
+                });
+        }
+
+        function handleDateChange(category, field, value) {
+            if (isValidDate(value)) {
+                const isoDate = convertToISO(value);
+                updateApplicantData(category, field, isoDate);
+            } else {
+                alert('Please enter date in DD/MM/YYYY format');
+                // ফোকাস ফিরিয়ে দিন এবং ভ্যালু ক্লিয়ার করুন
+                event.target.focus();
+                event.target.value = '';
+            }
+        }
+
+        // আপনার existing code এর নিচে এই ফাংশনগুলো যোগ করুন
+
+        // তারিখ validation
+        function isValidDate(dateString) {
+            const pattern = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+            if (!pattern.test(dateString)) return false;
+
+            const day = parseInt(dateString.split('/')[0]);
+            const month = parseInt(dateString.split('/')[1]);
+            const year = parseInt(dateString.split('/')[2]);
+
+            // সহজ validation
+            if (day < 1 || day > 31) return false;
+            if (month < 1 || month > 12) return false;
+            if (year < 1900 || year > 2100) return false;
+
+            return true;
+        }
+
+        // DD/MM/YYYY থেকে YYYY-MM-DD
+        function convertToISO(dateString) {
+            if (!isValidDate(dateString)) return '';
+            const parts = dateString.split('/');
+            return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+        }
+
+        // YYYY-MM-DD থেকে DD/MM/YYYY
+        function convertToDisplay(isoDate) {
+            if (!isoDate) return '';
+            const parts = isoDate.split('-');
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+
+        // তারিখ change handler
+        function handleDateChange(category, field, value) {
+            if (value === '') {
+                updateApplicantData(category, field, '');
+                return;
+            }
+
+            if (isValidDate(value)) {
+                const isoDate = convertToISO(value);
+                updateApplicantData(category, field, isoDate);
+            } else {
+                alert('Invalid date format. Please use DD/MM/YYYY');
+                event.target.value = '';
+                updateApplicantData(category, field, '');
+            }
         }
     </script>
 </body>
+
 </html>
