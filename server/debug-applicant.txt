@@ -1,13 +1,11 @@
 Array
 (
-    [id] => TRH-UK-PNR-782072K415-APPT-001
-    [pnr] => TRH-UK-PNR-782072K415
-    [user_pnr] => TRH-UK-PNR-782072K415-APPT-001
+    [id] => TRH-UK-PNR-903127K396-APPT-003
+    [pnr] => TRH-UK-PNR-903127K396
+    [user_pnr] => TRH-UK-PNR-903127K396-APPT-003
     [completed] => 1
     [passportInfo] => Array
         (
-            [pp_given_name] => Shahanur 
-            [pp_family_name] => Islam
         )
 
     [nidInfo] => Array
@@ -86,7 +84,6 @@ Array
 
                 )
 
-            [custom_accommodation] => 
         )
 
     [employmentInfo] => Array
@@ -129,7 +126,6 @@ Array
 
     [travelHistory] => Array
         (
-            [history] => 
         )
 
 )
